@@ -1,8 +1,8 @@
-# ProjectName
+# Faithlife.Testing
 
-ProjectName class library.
+Faithlife.Testing class library.
 
-[![Build](https://github.com/Faithlife/RepoName/workflows/Build/badge.svg)](https://github.com/Faithlife/RepoName/actions?query=workflow%3ABuild) [![NuGet](https://img.shields.io/nuget/v/ProjectName.svg)](https://www.nuget.org/packages/ProjectName)
+[![Build](https://github.com/Faithlife/FaithlifeTesting/workflows/Build/badge.svg)](https://github.com/Faithlife/FaithlifeTesting/actions?query=workflow%3ABuild) [![NuGet](https://img.shields.io/nuget/v/Faithlife.Testing.svg)](https://www.nuget.org/packages/Faithlife.Testing)
 
-* [Documentation](https://faithlife.github.io/RepoName/)
+* [Documentation](https://faithlife.github.io/FaithlifeTesting/)
 * [Release Notes](ReleaseNotes.md)
