@@ -285,20 +285,20 @@ namespace Faithlife.Testing
 			var (bodyString, bodyValues) = DebugValueExpressionVisitor.GetDiagnosticMessage(body);
 
 			var sb = new StringBuilder();
-			sb.AppendLine("Expected:");
+			sb.AppendLineLf("Expected:");
 			sb.Append('\t');
 			sb.Append(bodyString);
 
 			var debugValues = bodyValues.Concat(parameters).ToList();
 			if (debugValues.Any())
 			{
-				sb.AppendLine();
-				sb.AppendLine();
+				sb.AppendLineLf();
+				sb.AppendLineLf();
 				sb.Append("Actual:");
 
 				foreach (var (name, value) in debugValues)
 				{
-					sb.AppendLine();
+					sb.AppendLineLf();
 					sb.Append($"\t{name} = {ToString(value)}");
 				}
 			}
@@ -312,24 +312,24 @@ namespace Faithlife.Testing
 
 			if (allContextValues.Any())
 			{
-				sb.AppendLine();
-				sb.AppendLine();
+				sb.AppendLineLf();
+				sb.AppendLineLf();
 				sb.Append("Context:");
 
 				foreach (var (name, value) in allContextValues)
 				{
-					sb.AppendLine();
+					sb.AppendLineLf();
 					sb.Append($"\t{name} = {value}");
 				}
 			}
 
 			if (e != null)
 			{
-				sb.AppendLine();
-				sb.AppendLine();
+				sb.AppendLineLf();
+				sb.AppendLineLf();
 				sb.Append(e.GetType());
 				sb.Append(": ");
-				sb.AppendLine(e.Message);
+				sb.AppendLineLf(e.Message);
 				sb.Append(e.StackTrace);
 			}
 
