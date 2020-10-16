@@ -805,12 +805,12 @@ namespace Faithlife.Testing
 				try
 				{
 					// Prefer tabbed json for large objects, single-line JSON for short
-					var tabbyJson = JsonUtility.ToJson(obj, s_jsonWithTabs);
+					var tabbyJson = JsonUtility.ToJson(obj, s_jsonWithTabs).Replace("\r\n", "\n");
 
 					if (tabbyJson.Length >= 100)
 						return tabbyJson;
 
-					return Regex.Replace(tabbyJson, @"\r\n\s*", " ");
+					return Regex.Replace(tabbyJson, @"\n\s*", " ");
 				}
 				catch (Exception ex)
 				{
