@@ -420,7 +420,7 @@ namespace Faithlife.Testing
 						if (isFirst)
 							isFirst = false;
 						else
-							Out("\r\n\t&& ");
+							Out("\n\t&& ");
 
 						// Preserve the precedence of the "and" operator when visiting children
 						if (anded is BinaryExpression be)
