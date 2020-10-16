@@ -15,6 +15,10 @@ internal static class Build
 					GitAuthor = new GitAuthorInfo("Faithlife Build Bot", "faithlifebuildbot@users.noreply.github.com"),
 					SourceCodeUrl = "https://github.com/Faithlife/FaithlifeTesting/tree/master/src",
 				},
+				PackageSettings = new DotNetPackageSettings
+				{
+					FindProjects = () => NugetPackages.ProjectsToPublish,
+				},
 			});
 	});
 }
