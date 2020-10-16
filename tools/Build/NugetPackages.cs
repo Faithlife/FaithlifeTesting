@@ -4,6 +4,6 @@ public static class NugetPackages
 {
 	public static readonly IReadOnlyList<string> ProjectsToPublish = new[]
 	{
-		"Faithlife.Testing",
+		@"src\Faithlife.Testing",
 	};
 }
