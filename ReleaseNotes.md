@@ -1,5 +1,5 @@
 # Release Notes
 
-## 0.1.0
+## 1.0.0
 
-* Initial release.
+* Initial release of Faithlife.Testing
