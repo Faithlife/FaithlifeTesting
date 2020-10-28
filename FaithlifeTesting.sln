@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Build", "tools\Build\Build.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmlDocGen", "tools\XmlDocGen\XmlDocGen.csproj", "{EC2B2484-B209-41A2-94E5-4203A9740983}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Faithlife.Testing.RabbitMq", "Faithlife.Testing.RabbitMq\Faithlife.Testing.RabbitMq.csproj", "{D56091AD-025A-4F96-B39E-D6DADB8E5FA0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Faithlife.Testing.RabbitMq", "src\Faithlife.Testing.RabbitMq\Faithlife.Testing.RabbitMq.csproj", "{D56091AD-025A-4F96-B39E-D6DADB8E5FA0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
