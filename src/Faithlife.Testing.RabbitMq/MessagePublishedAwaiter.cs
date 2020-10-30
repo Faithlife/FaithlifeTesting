@@ -46,7 +46,9 @@ namespace Faithlife.Testing.RabbitMq
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
-		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
+		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression) => WaitForMessage(predicateExpression, TimeSpan.FromMilliseconds(5000));
+
+		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression, TimeSpan timeout)
 		{
 			var awaiter = new Awaiter(predicateExpression);
 
@@ -62,9 +64,8 @@ namespace Faithlife.Testing.RabbitMq
 			{
 				// LazyTask ensures that the timeout begins ticking once we start awaiting, not when first registering the awaiter.
 				// delayMilliseconds is not a `const` so that `AssertEx` can capture its name.
-				var delayMilliseconds = 5000;
 				var result = awaiter.Completion.Task;
-				await Task.WhenAny(result, Task.Delay(delayMilliseconds));
+				await Task.WhenAny(result, Task.Delay(timeout));
 
 				lock (m_lock)
 					m_awaiters.Remove(awaiter);
@@ -75,7 +76,7 @@ namespace Faithlife.Testing.RabbitMq
 					var messages = awaiter.Messages;
 					var exchange = $"http://{m_serverName}:15672/#/exchanges/%2f/{m_exchangeName}";
 
-					using (AssertEx.Context(new { messageCount, delayMilliseconds, exchange, m_routingKeyName }))
+					using (AssertEx.Context(new { messageCount, delayMilliseconds = timeout.TotalMilliseconds, exchange, m_routingKeyName }))
 					{
 						var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
 						var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, predicateExpression);
