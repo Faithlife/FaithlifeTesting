@@ -17,10 +17,16 @@ namespace Faithlife.Testing.RabbitMq
 		where TMessage : class
 	{
 		public MessagePublishedAwaiter(string serverName, string exchangeName, string routingKeyName)
+			: this(serverName, exchangeName, routingKeyName, TimeSpan.FromMilliseconds(5000))
+		{
+		}
+
+		public MessagePublishedAwaiter(string serverName, string exchangeName, string routingKeyName, TimeSpan timeout)
 		{
 			m_serverName = serverName;
 			m_exchangeName = exchangeName;
 			m_routingKeyName = routingKeyName;
+			m_timeout = timeout;
 
 			m_connection = new ConnectionFactory
 			{
@@ -46,9 +52,7 @@ namespace Faithlife.Testing.RabbitMq
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
-		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression) => WaitForMessage(predicateExpression, TimeSpan.FromMilliseconds(5000));
-
-		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression, TimeSpan timeout)
+		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
 		{
 			var awaiter = new Awaiter(predicateExpression);
 
@@ -65,7 +69,7 @@ namespace Faithlife.Testing.RabbitMq
 				// LazyTask ensures that the timeout begins ticking once we start awaiting, not when first registering the awaiter.
 				// delayMilliseconds is not a `const` so that `AssertEx` can capture its name.
 				var result = awaiter.Completion.Task;
-				await Task.WhenAny(result, Task.Delay(timeout));
+				await Task.WhenAny(result, Task.Delay(m_timeout));
 
 				lock (m_lock)
 					m_awaiters.Remove(awaiter);
@@ -76,7 +80,7 @@ namespace Faithlife.Testing.RabbitMq
 					var messages = awaiter.Messages;
 					var exchange = $"http://{m_serverName}:15672/#/exchanges/%2f/{m_exchangeName}";
 
-					using (AssertEx.Context(new { messageCount, delayMilliseconds = timeout.TotalMilliseconds, exchange, m_routingKeyName }))
+					using (AssertEx.Context(new { messageCount, delayMilliseconds = m_timeout.TotalMilliseconds, exchange, m_routingKeyName }))
 					{
 						var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
 						var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, predicateExpression);
@@ -184,6 +188,7 @@ namespace Faithlife.Testing.RabbitMq
 		private readonly string m_serverName;
 		private readonly string m_exchangeName;
 		private readonly string m_routingKeyName;
+		private readonly TimeSpan m_timeout;
 		private readonly IConnection m_connection;
 		private readonly IModel m_model;
 #pragma warning disable CS0618 // Type or member is obsolete
