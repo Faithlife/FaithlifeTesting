@@ -9,7 +9,7 @@ public sealed class MessagePublishedAwaiter<TMessage> : IDisposable
 
 | name | description |
 | --- | --- |
-| [MessagePublishedAwaiter](MessagePublishedAwaiter-1/MessagePublishedAwaiter.md)(…) |  |
+| [MessagePublishedAwaiter](MessagePublishedAwaiter-1/MessagePublishedAwaiter.md)(…) |  (2 constructors) |
 | [Dispose](MessagePublishedAwaiter-1/Dispose.md)() |  |
 | [WaitForMessage](MessagePublishedAwaiter-1/WaitForMessage.md)(…) |  |
 

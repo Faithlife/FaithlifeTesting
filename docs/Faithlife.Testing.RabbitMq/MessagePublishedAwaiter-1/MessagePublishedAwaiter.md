@@ -1,7 +1,21 @@
-# MessagePublishedAwaiter&lt;TMessage&gt; constructor
+# MessagePublishedAwaiter&lt;TMessage&gt; constructor (1 of 2)
 
 ```csharp
 public MessagePublishedAwaiter(string serverName, string exchangeName, string routingKeyName)
+```
+
+## See Also
+
+* class [MessagePublishedAwaiter&lt;TMessage&gt;](../MessagePublishedAwaiter-1.md)
+* namespace [Faithlife.Testing.RabbitMq](../../Faithlife.Testing.RabbitMq.md)
+
+---
+
+# MessagePublishedAwaiter&lt;TMessage&gt; constructor (2 of 2)
+
+```csharp
+public MessagePublishedAwaiter(string serverName, string exchangeName, string routingKeyName, 
+    TimeSpan timeout)
 ```
 
 ## See Also
