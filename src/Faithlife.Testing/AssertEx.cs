@@ -21,7 +21,7 @@ namespace Faithlife.Testing
 			if (predicateExpression == null)
 				throw new ArgumentNullException(nameof(predicateExpression));
 
-			var message = GetMessageIfFalse(predicateExpression);
+			var message = GetMessageIfFalse(predicateExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (message != null)
 				NUnit.Framework.Assert.Fail(message);
@@ -35,10 +35,10 @@ namespace Faithlife.Testing
 				NUnit.Framework.Assert.Fail(GetMessage(() => value));
 
 				static string GetMessage(Expression<Func<T>> valueExpression)
-					=> GetDiagnosticMessage(valueExpression.Body, null);
+					=> GetDiagnosticMessage(valueExpression.Body, null, ImmutableStack<(string Name, object Value)>.Empty);
 			}
 
-			return new Builder<T>(value, () => value);
+			return new Builder<T>(value, () => value, ImmutableStack<(string Name, object Value)>.Empty);
 		}
 
 		public static Builder<T> Select<T>(Expression<Func<T>> valueExpression)
@@ -47,12 +47,12 @@ namespace Faithlife.Testing
 			if (valueExpression == null)
 				throw new ArgumentNullException(nameof(valueExpression));
 
-			var (value, message) = GetValueOrNullMessage(valueExpression);
+			var (value, message) = GetValueOrNullMessage(valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (message != null)
 				NUnit.Framework.Assert.Fail(message);
 
-			return new Builder<T>(value, valueExpression);
+			return new Builder<T>(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 		}
 
 		public static T Select<T>(Expression<Func<T?>> valueExpression)
@@ -61,7 +61,7 @@ namespace Faithlife.Testing
 			if (valueExpression == null)
 				throw new ArgumentNullException(nameof(valueExpression));
 
-			var (value, message) = GetValueOrNullMessage(valueExpression);
+			var (value, message) = GetValueOrNullMessage(valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (!value.HasValue)
 				NUnit.Framework.Assert.Fail(message);
@@ -72,33 +72,8 @@ namespace Faithlife.Testing
 		public static IDisposable Context(string name, object value) => Context((name, value));
 		public static IDisposable Context((string Name, object Value) first, params (string Key, object Value)[] rest) => Context(rest.Prepend(first));
 		public static IDisposable Context<TValue>(IReadOnlyDictionary<string, TValue> data) => Context(data.Select(x => (x.Key, (object) x.Value)));
-
-		public static IDisposable Context(object context)
-		{
-			return Context(context.GetType()
-				.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
-				.Select(prop => (prop.Name, prop.GetValue(context))));
-		}
-
-		public static IDisposable Context(params Expression<Func<object>>[] contextExpressions)
-		{
-			return Context(contextExpressions.SelectMany(contextExpression =>
-			{
-				var (contextString, contextValues) = DebugValueExpressionVisitor.BodyToString(contextExpression.Body);
-
-				return contextValues.Append((contextString, (object) new Lazy<object>(() =>
-				{
-					try
-					{
-						return contextExpression.Compile().DynamicInvoke();
-					}
-					catch (Exception ex)
-					{
-						return (object) ex;
-					}
-				}, LazyThreadSafetyMode.ExecutionAndPublication)));
-			}));
-		}
+		public static IDisposable Context(object context) => Context(GetContextFromObject(context));
+		public static IDisposable Context(params Expression<Func<object>>[] contextExpressions) => Context(GetContextFromExpressions(contextExpressions));
 
 		public static IDisposable Context(IEnumerable<(string Name, object Value)> context)
 		{
@@ -135,10 +110,11 @@ namespace Faithlife.Testing
 		public sealed class Builder<T1>
 			where T1 : class
 		{
-			internal Builder(T1 value, Expression<Func<T1>> valueExpression)
+			internal Builder(T1 value, Expression<Func<T1>> valueExpression, ImmutableStack<(string Name, object Value)> context)
 			{
 				Value = value;
 				m_valueExpression = valueExpression;
+				m_context = context;
 			}
 
 			public Builder<T2> Select<T2>(Expression<Func<T1, T2>> mapExpression)
@@ -149,12 +125,12 @@ namespace Faithlife.Testing
 
 				var valueExpression = CoalesceWith(mapExpression);
 
-				var (value, message) = GetValueOrNullMessage(valueExpression);
+				var (value, message) = GetValueOrNullMessage(valueExpression, m_context);
 
 				if (message != null)
 					NUnit.Framework.Assert.Fail(message);
 
-				return new Builder<T2>(value, valueExpression);
+				return new Builder<T2>(value, valueExpression, m_context);
 			}
 
 			public T2 Select<T2>(Expression<Func<T1, T2?>> mapExpression)
@@ -165,7 +141,7 @@ namespace Faithlife.Testing
 
 				var valueExpression = CoalesceWith(mapExpression);
 
-				var (value, message) = GetValueOrNullMessage(valueExpression);
+				var (value, message) = GetValueOrNullMessage(valueExpression, m_context);
 
 				if (message != null)
 					NUnit.Framework.Assert.Fail(message);
@@ -178,7 +154,7 @@ namespace Faithlife.Testing
 				if (predicateExpression == null)
 					throw new ArgumentNullException(nameof(predicateExpression));
 
-				var message = GetMessageIfFalse(CoalesceWith(predicateExpression));
+				var message = GetMessageIfFalse(CoalesceWith(predicateExpression), m_context);
 
 				if (message != null)
 					NUnit.Framework.Assert.Fail(message);
@@ -201,10 +177,32 @@ namespace Faithlife.Testing
 				}
 				catch (Exception exception)
 				{
-					NUnit.Framework.Assert.Fail(GetDiagnosticMessage(coalescedAssertion.Body, exception));
+					NUnit.Framework.Assert.Fail(GetDiagnosticMessage(coalescedAssertion.Body, exception, m_context));
 				}
 
 				return this;
+			}
+
+			public Builder<T1> Context(string name, object value) => Context((name, value));
+			public Builder<T1> Context((string Name, object Value) first, params (string Key, object Value)[] rest) => Context(rest.Prepend(first));
+			public Builder<T1> Context<TValue>(IReadOnlyDictionary<string, TValue> data) => Context(data.Select(x => (x.Key, (object) x.Value)));
+			public Builder<T1> Context(object context) => Context(GetContextFromObject(context));
+			public Builder<T1> Context(params Expression<Func<object>>[] contextExpressions) => Context(GetContextFromExpressions(contextExpressions));
+
+			public Builder<T1> Context(IEnumerable<(string Name, object Value)> context)
+			{
+				if (context == null)
+					throw new ArgumentNullException(nameof(context));
+
+				var newContext = m_context;
+
+				foreach (var pair in context)
+					newContext = newContext.Push(pair);
+
+				if (newContext == m_context)
+					throw new ArgumentException("Must provide more context! Sequence contains no elements.", nameof(context));
+
+				return new Builder<T1>(Value, m_valueExpression, newContext);
 			}
 
 			public T1 Value { get; }
@@ -234,9 +232,33 @@ namespace Faithlife.Testing
 			}
 
 			private readonly Expression<Func<T1>> m_valueExpression;
+			private readonly ImmutableStack<(string Name, object Value)> m_context;
 		}
 
-		private static (T Value, string AssertMessage) GetValueOrNullMessage<T>(Expression<Func<T>> valueExpression)
+		private static IEnumerable<(string Name, object Value)> GetContextFromObject(object context) =>
+			context.GetType()
+				.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
+				.Select(prop => (prop.Name, prop.GetValue(context)));
+
+		private static IEnumerable<(string Name, object Value)> GetContextFromExpressions(IEnumerable<Expression<Func<object>>> contextExpressions) =>
+			contextExpressions.SelectMany(contextExpression =>
+			{
+				var (contextString, contextValues) = DebugValueExpressionVisitor.BodyToString(contextExpression.Body);
+
+				return contextValues.Append((contextString, (object) new Lazy<object>(() =>
+				{
+					try
+					{
+						return contextExpression.Compile().DynamicInvoke();
+					}
+					catch (Exception ex)
+					{
+						return (object) ex;
+					}
+				}, LazyThreadSafetyMode.ExecutionAndPublication)));
+			});
+
+		private static (T Value, string AssertMessage) GetValueOrNullMessage<T>(Expression<Func<T>> valueExpression, IEnumerable<(string Name, object Value)> immediateContext)
 		{
 			var predicateFunc = valueExpression.Compile();
 			Exception e = null;
@@ -255,10 +277,10 @@ namespace Faithlife.Testing
 				}
 			}
 
-			return (default, GetDiagnosticMessage(valueExpression.Body, e));
+			return (default, GetDiagnosticMessage(valueExpression.Body, e, immediateContext));
 		}
 
-		private static string GetMessageIfFalse(Expression<Func<bool>> predicateExpression)
+		private static string GetMessageIfFalse(Expression<Func<bool>> predicateExpression, IEnumerable<(string Name, object Value)> immediateContext)
 		{
 			var predicateFunc = predicateExpression.Compile();
 			Exception e = null;
@@ -276,10 +298,10 @@ namespace Faithlife.Testing
 				}
 			}
 
-			return GetDiagnosticMessage(predicateExpression.Body, e);
+			return GetDiagnosticMessage(predicateExpression.Body, e, immediateContext);
 		}
 
-		private static string GetDiagnosticMessage(Expression body, Exception e, params (string Name, object Value)[] parameters)
+		private static string GetDiagnosticMessage(Expression body, Exception e, IEnumerable<(string Name, object Value)> immediateContext)
 		{
 			var (bodyString, bodyValues) = DebugValueExpressionVisitor.GetDiagnosticMessage(body);
 
@@ -288,7 +310,7 @@ namespace Faithlife.Testing
 			sb.Append('\t');
 			sb.Append(bodyString);
 
-			var debugValues = bodyValues.Concat(parameters).ToList();
+			var debugValues = bodyValues.ToList();
 			if (debugValues.Any())
 			{
 				sb.AppendLineLf();
@@ -303,7 +325,7 @@ namespace Faithlife.Testing
 			}
 
 			var allContextValues = new List<(string Name, string Value)>();
-			foreach (var (name, value) in s_contextStack.Value ?? Enumerable.Empty<(string Name, object Value)>())
+			foreach (var (name, value) in immediateContext.Concat(s_contextStack.Value ?? Enumerable.Empty<(string Name, object Value)>()))
 			{
 				if (debugValues.All(v => v.Name != name) && allContextValues.All(v => v.Name != name))
 					allContextValues.Add((name, ToString(value)));
