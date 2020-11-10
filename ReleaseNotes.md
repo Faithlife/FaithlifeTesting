@@ -3,7 +3,7 @@
 ## 1.3.0
 
 * Minor: Added `Context` overloads to `AssertEx.Builder` chains
-* Patch: Remove dependencies on `Faithlife.Uitlity` and `System.Collections.Immutable`.
+* Patch: Remove dependencies on `Faithlife.Utility` and `System.Collections.Immutable`.
 
 ## 1.2.0
 
