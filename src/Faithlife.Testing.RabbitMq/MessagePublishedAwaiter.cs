@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Faithlife.Json;
-using Faithlife.Utility;
 using RabbitMQ.Client;
 using RabbitMQ.Client.MessagePatterns;
 
@@ -36,7 +35,7 @@ namespace Faithlife.Testing.RabbitMq
 
 			m_model = m_connection.CreateModel();
 
-			var queueName = $"{exchangeName}_{routingKeyName}_awaiter_{Environment.MachineName}_{Guid.NewGuid().ToLowerNoDashString()}";
+			var queueName = $"{exchangeName}_{routingKeyName}_awaiter_{Environment.MachineName}_{Guid.NewGuid():N}";
 			string queue = m_model.QueueDeclare(
 				queue: queueName,
 				durable: false,
