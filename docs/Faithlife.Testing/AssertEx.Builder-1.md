@@ -11,6 +11,8 @@ public sealed class Builder<T1>
 | --- | --- |
 | [Value](AssertEx.Builder-1/Value.md) { get; } |  |
 | [Assert](AssertEx.Builder-1/Assert.md)(…) |  (2 methods) |
+| [Context](AssertEx.Builder-1/Context.md)(…) |  (5 methods) |
+| [Context&lt;TValue&gt;](AssertEx.Builder-1/Context.md)(…) |  |
 | [Select&lt;T2&gt;](AssertEx.Builder-1/Select.md)(…) |  (2 methods) |
 | [implicit operator](AssertEx.Builder-1/op_Implicit.md) |  |
 
