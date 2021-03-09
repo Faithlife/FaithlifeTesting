@@ -56,7 +56,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public void TestFalseConstant()
 		{
 			// This is silly, but not worth preventing.
-			AssertThowsAssertion(() => false, @"Expected:
+			AssertThrowsAssertion(() => false, @"Expected:
 	false");
 		}
 
@@ -64,7 +64,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public void TestBooleanVariable()
 		{
 			var value = false;
-			AssertThowsAssertion(() => value, @"Expected:
+			AssertThrowsAssertion(() => value, @"Expected:
 	value
 
 Actual:
@@ -75,7 +75,7 @@ Actual:
 		public void TestVariableEquals()
 		{
 			var value = 1;
-			AssertThowsAssertion(() => value == 2, @"Expected:
+			AssertThrowsAssertion(() => value == 2, @"Expected:
 	value == 2
 
 Actual:
@@ -86,7 +86,7 @@ Actual:
 		public void TestNullableConvert()
 		{
 			int? value = 1;
-			AssertThowsAssertion(() => value == 2, @"Expected:
+			AssertThrowsAssertion(() => value == 2, @"Expected:
 	value == 2
 
 Actual:
@@ -97,7 +97,7 @@ Actual:
 		public void TestNot()
 		{
 			var value = true;
-			AssertThowsAssertion(() => !value, @"Expected:
+			AssertThrowsAssertion(() => !value, @"Expected:
 	!value
 
 Actual:
@@ -108,7 +108,7 @@ Actual:
 		public void TestMember()
 		{
 			var value = 2;
-			AssertThowsAssertion(() => value == m_member, @"Expected:
+			AssertThrowsAssertion(() => value == m_member, @"Expected:
 	value == m_member
 
 Actual:
@@ -120,7 +120,7 @@ Actual:
 		public void TestStaticMember()
 		{
 			var value = 2;
-			AssertThowsAssertion(() => value == s_member, @"Expected:
+			AssertThrowsAssertion(() => value == s_member, @"Expected:
 	value == s_member
 
 Actual:
@@ -132,7 +132,7 @@ Actual:
 		public void TestConstant()
 		{
 			var value = 2;
-			AssertThowsAssertion(() => value == c_member, @"Expected:
+			AssertThrowsAssertion(() => value == c_member, @"Expected:
 	value == 1
 
 Actual:
@@ -143,7 +143,7 @@ Actual:
 		public void TestAny()
 		{
 			var value = Array.Empty<int>();
-			AssertThowsAssertion(() => value.Any(), @"Expected:
+			AssertThrowsAssertion(() => value.Any(), @"Expected:
 	value.Any()
 
 Actual:
@@ -154,7 +154,7 @@ Actual:
 		public void TestSingle()
 		{
 			var value = Array.Empty<FooDto>();
-			AssertThowsAssertionWithStackTrace(() => value.Single(), @"Expected:
+			AssertThrowsAssertionWithStackTrace(() => value.Single(), @"Expected:
 	value.Single()
 
 Actual:
@@ -167,29 +167,29 @@ System.InvalidOperationException: Sequence contains no elements");
 		public void TestArrayIndex()
 		{
 			var value = new[] { 2 };
-			AssertThowsAssertion(() => value[0] == 1, @"Expected:
+			AssertThrowsAssertion(() => value[0] == 1, @"Expected:
 	value[0] == 1
 
 Actual:
-	value = [ 2 ]");
+	value = [2]");
 		}
 
 		[Test]
 		public void TestListIndex()
 		{
 			var value = new List<int> { 2 };
-			AssertThowsAssertion(() => value[0] == 1, @"Expected:
+			AssertThrowsAssertion(() => value[0] == 1, @"Expected:
 	value[0] == 1
 
 Actual:
-	value = [ 2 ]");
+	value = [2]");
 		}
 
 		[Test]
 		public void TestDictionaryIndex()
 		{
 			var value = new Dictionary<string, int>();
-			AssertThowsAssertionWithStackTrace(() => value["foo"] == 1, @"Expected:
+			AssertThrowsAssertionWithStackTrace(() => value["foo"] == 1, @"Expected:
 	value[""foo""] == 1
 
 Actual:
@@ -202,18 +202,18 @@ System.Collections.Generic.KeyNotFoundException: The given key 'foo' was not pre
 		public void TestNestedPredicate()
 		{
 			var value = new[] { 1 };
-			AssertThowsAssertion(() => value.Any(x => x == 2), @"Expected:
+			AssertThrowsAssertion(() => value.Any(x => x == 2), @"Expected:
 	value.Any(x => x == 2)
 
 Actual:
-	value = [ 1 ]");
+	value = [1]");
 		}
 
 		[Test]
 		public void TestLinqMethodNull()
 		{
 			int[] value = null;
-			AssertThowsAssertionWithStackTrace(() => value.Any(), @"Expected:
+			AssertThrowsAssertionWithStackTrace(() => value.Any(), @"Expected:
 	value.Any()
 
 Actual:
@@ -227,7 +227,7 @@ System.ArgumentNullException: Value cannot be null. (Parameter 'source')");
 		{
 			var a = 2;
 			var b = 4;
-			AssertThowsAssertion(() => a == 1 || b == 3, @"Expected:
+			AssertThrowsAssertion(() => a == 1 || b == 3, @"Expected:
 	a == 1 || b == 3
 
 Actual:
@@ -240,7 +240,7 @@ Actual:
 		{
 			var a = 2;
 			var b = 4;
-			AssertThowsAssertion(() => a == 1 && b == 3, @"Expected:
+			AssertThrowsAssertion(() => a == 1 && b == 3, @"Expected:
 	a == 1
 	&& b == 3
 
@@ -254,7 +254,7 @@ Actual:
 		{
 			var a = 1;
 			var b = 4;
-			AssertThowsAssertion(() => a == 1 && b == 3, @"Expected:
+			AssertThrowsAssertion(() => a == 1 && b == 3, @"Expected:
 	b == 3
 
 Actual:
@@ -267,7 +267,7 @@ Actual:
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertThowsAssertion(() => (a + b) * c == 0, @"Expected:
+			AssertThrowsAssertion(() => (a + b) * c == 0, @"Expected:
 	(a + b) * c == 0
 
 Actual:
@@ -282,7 +282,7 @@ Actual:
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertThowsAssertion(() => a - (b - c) == -8, @"Expected:
+			AssertThrowsAssertion(() => a - (b - c) == -8, @"Expected:
 	a - (b - c) == -8
 
 Actual:
@@ -297,7 +297,7 @@ Actual:
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertThowsAssertion(() => a - (b + c) == 2, @"Expected:
+			AssertThrowsAssertion(() => a - (b + c) == 2, @"Expected:
 	a - (b + c) == 2
 
 Actual:
@@ -313,7 +313,7 @@ Actual:
 			var b = Array.Empty<string>();
 			var c = Array.Empty<string>();
 			var d = Array.Empty<string>();
-			AssertThowsAssertion(() => a.Any(x => x.Length == 5) && b.Any(x => x.Length == 5) && c.Any(x => x.Length == 5) && d.Any(x => x.Length == 5), @"Expected:
+			AssertThrowsAssertion(() => a.Any(x => x.Length == 5) && b.Any(x => x.Length == 5) && c.Any(x => x.Length == 5) && d.Any(x => x.Length == 5), @"Expected:
 	a.Any(x => x.Length == 5)
 	&& b.Any(x => x.Length == 5)
 	&& c.Any(x => x.Length == 5)
@@ -331,7 +331,7 @@ Actual:
 		{
 			var foo = new FooDto { Id = "1", Bar = "Fizz" };
 
-			AssertThowsAssertion(() => foo.Bar == "Buzz", @"Expected:
+			AssertThrowsAssertion(() => foo.Bar == "Buzz", @"Expected:
 	foo.Bar == ""Buzz""
 
 Actual:
@@ -343,7 +343,7 @@ Actual:
 		{
 			FooDto foo = null;
 
-			AssertThowsAssertionWithStackTrace(() => foo.Bar == "Buzz", @"Expected:
+			AssertThrowsAssertionWithStackTrace(() => foo.Bar == "Buzz", @"Expected:
 	foo.Bar == ""Buzz""
 
 Actual:
@@ -357,7 +357,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			FooDto foo = null;
 
-			AssertThowsAssertion(() => foo != null && foo.Bar == "Buzz", @"Expected:
+			AssertThrowsAssertion(() => foo != null && foo.Bar == "Buzz", @"Expected:
 	foo != null
 
 Actual:
@@ -369,7 +369,7 @@ Actual:
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertThowsAssertion(() => false, @"Expected:
+			AssertThrowsAssertion(() => false, @"Expected:
 	false
 
 Context:
@@ -381,7 +381,7 @@ Context:
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertThowsAssertion(() => value == 2, @"Expected:
+			AssertThrowsAssertion(() => value == 2, @"Expected:
 	value == 2
 
 Actual:
@@ -394,7 +394,7 @@ Actual:
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
 			using var e = AssertEx.Context(() => value);
-			AssertThowsAssertion(() => false, @"Expected:
+			AssertThrowsAssertion(() => false, @"Expected:
 	false
 
 Context:
@@ -407,7 +407,7 @@ Context:
 			// This is a bit silly; test is more to document the silly rather than preserve it.
 			const int value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertThowsAssertion(() => false, @"Expected:
+			AssertThrowsAssertion(() => false, @"Expected:
 	false
 
 Context:
@@ -426,7 +426,7 @@ Context:
 					{
 						var firstTask = 1;
 						using var e = AssertEx.Context(() => firstTask);
-						AssertThowsAssertion(() => false, @"Expected:
+						AssertThrowsAssertion(() => false, @"Expected:
 	false
 
 Context:
@@ -438,7 +438,7 @@ Context:
 					{
 						var secondTask = 1;
 						using var e = AssertEx.Context(() => secondTask);
-						AssertThowsAssertion(() => false, @"Expected:
+						AssertThrowsAssertion(() => false, @"Expected:
 	false
 
 Context:
@@ -446,7 +446,7 @@ Context:
 	value = 1");
 					}));
 
-			AssertThowsAssertion(() => false, @"Expected:
+			AssertThrowsAssertion(() => false, @"Expected:
 	false
 
 Context:
@@ -458,11 +458,11 @@ Context:
 		{
 			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" }, };
 
-			AssertThowsAssertion(() => foos.Select(f => f.Baz).Contains(2), @"Expected:
+			AssertThrowsAssertion(() => foos.Select(f => f.Baz).Contains(2), @"Expected:
 	foos.Select(f => f.Baz).Contains(2)
 
 Actual:
-	foos.Select(f => f.Baz) = [ 1 ]");
+	foos.Select(f => f.Baz) = [1]");
 		}
 
 		[Test]
@@ -471,12 +471,12 @@ Actual:
 			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" }, };
 			var value = 1;
 
-			AssertThowsAssertion(() => foos.Select(f => f.Baz + value).Contains(1), @"Expected:
+			AssertThrowsAssertion(() => foos.Select(f => f.Baz + value).Contains(1), @"Expected:
 	foos.Select(f => f.Baz + value).Contains(1)
 
 Actual:
 	value = 1
-	foos.Select(f => f.Baz + value) = [ 2 ]");
+	foos.Select(f => f.Baz + value) = [2]");
 		}
 
 		[Test]
@@ -484,11 +484,11 @@ Actual:
 		{
 			var foos = new[] { null, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertThowsAssertionWithStackTrace(() => foos.Any(f => f.Bar.Length == 4), @"Expected:
+			AssertThrowsAssertionWithStackTrace(() => foos.Any(f => f.Bar.Length == 4), @"Expected:
 	foos.Any(f => f.Bar.Length == 4)
 
 Actual:
-	foos = [ null, { ""bar"": ""Buzz"", ""baz"": 1 } ]
+	foos = [null, {""bar"": ""Buzz"", ""baz"": 1}]
 
 System.NullReferenceException: Object reference not set to an instance of an object.");
 		}
@@ -498,11 +498,11 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertThowsAssertionWithStackTrace(() => foos.Any(f => f.Bar.Length == 4), @"Expected:
+			AssertThrowsAssertionWithStackTrace(() => foos.Any(f => f.Bar.Length == 4), @"Expected:
 	foos.Any(f => f.Bar.Length == 4)
 
 Actual:
-	foos = [ { ""baz"": 2 }, { ""bar"": ""Buzz"", ""baz"": 1 } ]
+	foos = [{""baz"": 2}, {""bar"": ""Buzz"", ""baz"": 1}]
 
 System.NullReferenceException: Object reference not set to an instance of an object.");
 		}
@@ -512,11 +512,11 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertThowsAssertion(() => foos.All(f => f.Baz == 1), @"Expected:
+			AssertThrowsAssertion(() => foos.All(f => f.Baz == 1), @"Expected:
 	foos.All(f => f.Baz == 1)
 
 Actual:
-	foos[0] = { ""baz"": 2 }");
+	foos[0] = {""baz"": 2}");
 		}
 
 		[Test]
@@ -524,11 +524,113 @@ Actual:
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertThowsAssertion(() => !foos.Any(f => f.Baz == 2), @"Expected:
+			AssertThrowsAssertion(() => !foos.Any(f => f.Baz == 2), @"Expected:
 	!foos.Any(f => f.Baz == 2)
 
 Actual:
-	foos[0] = { ""baz"": 2 }");
+	foos[0] = {""baz"": 2}");
+		}
+
+		[Test]
+		public void TestLargeObjectFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 } };
+
+			AssertThrowsAssertion(() => bar == null, @"Expected:
+	bar == null
+
+Actual:
+	bar = {
+		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
+		""foo"": {
+			""bar"": ""hashtag yolo swag"",
+			""baz"": 1
+		}
+	}
+");
+		}
+
+		[Test]
+		public void TestLargeObjectWithSmallArrayFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 }, Ints = new[] { 1, 2, 3 } };
+
+			AssertThrowsAssertion(() => bar == null, @"Expected:
+	bar == null
+
+Actual:
+	bar = {
+		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
+		""ints"": [1, 2, 3],
+		""foo"": {
+			""bar"": ""hashtag yolo swag"",
+			""baz"": 1
+		}
+	}
+");
+		}
+
+		[Test]
+		public void TestLargeObjectWithLargeArrayFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 } };
+
+			AssertThrowsAssertion(() => bar == null, @"Expected:
+	bar == null
+
+Actual:
+	bar = {
+		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
+		""ints"": [
+			1,
+			2,
+			3,
+			4,
+			5,
+			6,
+			7,
+			8,
+			9,
+			10,
+			11,
+			12,
+			13,
+			14,
+			15,
+			16,
+			17,
+			18,
+			19,
+			20,
+			21,
+			22,
+			23,
+			24,
+			25
+		]
+	}
+");
+		}
+
+		[Test]
+		public void TestLargeObjectWithNestedArrayFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foos = new[] { new FooDto { Bar = "hashtag yolo swag", Baz = 1 } } };
+
+			AssertThrowsAssertion(() => bar == null, @"Expected:
+	bar == null
+
+Actual:
+	bar = {
+		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
+		""foos"": [
+			{
+				""bar"": ""hashtag yolo swag"",
+				""baz"": 1
+			}
+		]
+	}
+");
 		}
 
 		[Test, Explicit("TODO: Fix this")]
@@ -536,7 +638,7 @@ Actual:
 		{
 			var foo = "foo";
 
-			AssertThowsAssertion(() => string.Equals("bar", foo, StringComparison.InvariantCultureIgnoreCase), @"Expected:
+			AssertThrowsAssertion(() => string.Equals("bar", foo, StringComparison.InvariantCultureIgnoreCase), @"Expected:
 	string.Equals(""bar"", foo, StringComparison.InvariantCultureIgnoreCase)
 
 Actual:
@@ -548,7 +650,7 @@ Actual:
 		{
 			var foo = 1;
 
-			AssertThowsAssertion(() => ((FooEnum) foo).ToString() == "Bar", @"Expected:
+			AssertThrowsAssertion(() => ((FooEnum) foo).ToString() == "Bar", @"Expected:
 	((FooEnum) foo).ToString() == ""Bar""
 
 Actual:
@@ -565,14 +667,14 @@ Actual:
 	Bar = ""Baz""", expectStackTrace: false);
 		}
 
-		private static void AssertThowsAssertionWithStackTrace<T>(Expression<Func<T>> expression, string expectedMessage)
+		private static void AssertThrowsAssertionWithStackTrace<T>(Expression<Func<T>> expression, string expectedMessage)
 			where T : class
 			=> AssertThrowsAssertion(() => AssertEx.Select(expression), expectedMessage, expectStackTrace: true);
 
-		private static void AssertThowsAssertion(Expression<Func<bool>> expression, string expectedMessage)
+		private static void AssertThrowsAssertion(Expression<Func<bool>> expression, string expectedMessage)
 			=> AssertThrowsAssertion(() => AssertEx.Assert(expression), expectedMessage, expectStackTrace: false);
 
-		private static void AssertThowsAssertionWithStackTrace(Expression<Func<bool>> expression, string expectedMessage)
+		private static void AssertThrowsAssertionWithStackTrace(Expression<Func<bool>> expression, string expectedMessage)
 			=> AssertThrowsAssertion(() => AssertEx.Assert(expression), expectedMessage, expectStackTrace: true);
 
 		private static void AssertThrowsAssertion(TestDelegate code, string expectedMessage, bool expectStackTrace)
@@ -617,6 +719,14 @@ Actual:
 			{
 				AssertEx.Assert(() => Bar == "Buzz");
 			}
+		}
+
+		private sealed class BarDto
+		{
+			public string Text { get; set; }
+			public int[] Ints { get; set; }
+			public FooDto Foo { get; set; }
+			public FooDto[] Foos { get; set; }
 		}
 
 		private const int c_member = 1;

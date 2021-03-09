@@ -825,13 +825,7 @@ namespace Faithlife.Testing
 			{
 				try
 				{
-					// Prefer tabbed json for large objects, single-line JSON for short
-					var tabbyJson = JsonUtility.ToJson(obj, s_jsonWithTabs).Replace("\r\n", "\n");
-
-					if (tabbyJson.Length >= 100)
-						return tabbyJson;
-
-					return Regex.Replace(tabbyJson, @"\n\s*", " ");
+					return ToPrettyJson(obj, 1);
 				}
 				catch (Exception ex)
 				{
@@ -841,6 +835,69 @@ namespace Faithlife.Testing
 
 			return toString;
 		}
+
+		private static string ToPrettyJson(object obj, int tabLevel)
+		{
+			var rawJson = JsonUtility.ToJson(obj, s_jsonWithTabs).Replace("\r\n", "\n");
+			var lines = rawJson.Split('\n').Select(l => l.Trim()).ToList();
+
+			// if json can fit on one line, return inlined
+			var shortJson = lines.Select(l => l + (l.EndsWithOrdinal(",") ? " " : "")).Join("");
+			if (shortJson.Length < c_maxJsonLength)
+				return shortJson;
+
+			// else construct pretty json output
+			var longJson = "";
+			for (var i = 0; i < lines.Count; i++)
+			{
+				var line = lines[i];
+				var hasArrayStart = line.EndsWithOrdinal("[");
+				var hasStart = hasArrayStart || line.EndsWithOrdinal("{");
+				var hasEnd = line.StartsWithOrdinal("]") || line.StartsWithOrdinal("}");
+
+				if (hasArrayStart)
+				{
+					// try to inline the array if it's short and composed of primitives
+					var arrayLines = new List<string>();
+					var hasNested = false;
+					var j = i;
+					while (++j < lines.Count)
+					{
+						var arrayLine = lines[j];
+						if (arrayLine.StartsWithOrdinal("]"))
+							break;
+
+						if (arrayLine.StartsWithOrdinal("[") || arrayLine.StartsWithOrdinal("{"))
+						{
+							hasNested = true;
+							break;
+						}
+
+						arrayLines.Add(arrayLine);
+					}
+
+					var shortArray = line + arrayLines.Join(" ") + lines[j];
+					if (!hasNested && shortArray.Length < c_maxJsonLength - tabLevel * 4)
+					{
+						longJson += new string('\t', tabLevel) + shortArray + '\n';
+						i = j;
+						continue;
+					}
+				}
+
+				if (hasEnd)
+					tabLevel--;
+
+				longJson += new string('\t', tabLevel) + line + '\n';
+
+				if (hasStart)
+					tabLevel++;
+			}
+
+			return longJson.TrimStart();
+		}
+
+		private const int c_maxJsonLength = 100;
 
 		private static readonly JsonSettings s_jsonWithTabs = new JsonSettings { IsIndented = true };
 
