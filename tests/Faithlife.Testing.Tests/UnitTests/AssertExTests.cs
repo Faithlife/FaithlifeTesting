@@ -488,7 +488,7 @@ Actual:
 	foos.Any(f => f.Bar.Length == 4)
 
 Actual:
-	foos = [null, {""bar"": ""Buzz"", ""baz"": 1}]
+	foos = [null, { ""bar"": ""Buzz"", ""baz"": 1 }]
 
 System.NullReferenceException: Object reference not set to an instance of an object.");
 		}
@@ -502,7 +502,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 	foos.Any(f => f.Bar.Length == 4)
 
 Actual:
-	foos = [{""baz"": 2}, {""bar"": ""Buzz"", ""baz"": 1}]
+	foos = [{ ""baz"": 2 }, { ""bar"": ""Buzz"", ""baz"": 1 }]
 
 System.NullReferenceException: Object reference not set to an instance of an object.");
 		}
@@ -516,7 +516,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 	foos.All(f => f.Baz == 1)
 
 Actual:
-	foos[0] = {""baz"": 2}");
+	foos[0] = { ""baz"": 2 }");
 		}
 
 		[Test]
@@ -528,7 +528,7 @@ Actual:
 	!foos.Any(f => f.Baz == 2)
 
 Actual:
-	foos[0] = {""baz"": 2}");
+	foos[0] = { ""baz"": 2 }");
 		}
 
 		[Test]
@@ -542,12 +542,8 @@ Actual:
 Actual:
 	bar = {
 		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
-		""foo"": {
-			""bar"": ""hashtag yolo swag"",
-			""baz"": 1
-		}
-	}
-");
+		""foo"": { ""bar"": ""hashtag yolo swag"", ""baz"": 1 }
+	}");
 		}
 
 		[Test]
@@ -562,18 +558,14 @@ Actual:
 	bar = {
 		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
 		""ints"": [1, 2, 3],
-		""foo"": {
-			""bar"": ""hashtag yolo swag"",
-			""baz"": 1
-		}
-	}
-");
+		""foo"": { ""bar"": ""hashtag yolo swag"", ""baz"": 1 }
+	}");
 		}
 
 		[Test]
 		public void TestLargeObjectWithLargeArrayFormatting()
 		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 } };
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 } };
 
 			AssertThrowsAssertion(() => bar == null, @"Expected:
 	bar == null
@@ -606,31 +598,10 @@ Actual:
 			22,
 			23,
 			24,
-			25
+			25,
+			26
 		]
-	}
-");
-		}
-
-		[Test]
-		public void TestLargeObjectWithNestedArrayFormatting()
-		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foos = new[] { new FooDto { Bar = "hashtag yolo swag", Baz = 1 } } };
-
-			AssertThrowsAssertion(() => bar == null, @"Expected:
-	bar == null
-
-Actual:
-	bar = {
-		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
-		""foos"": [
-			{
-				""bar"": ""hashtag yolo swag"",
-				""baz"": 1
-			}
-		]
-	}
-");
+	}");
 		}
 
 		[Test, Explicit("TODO: Fix this")]

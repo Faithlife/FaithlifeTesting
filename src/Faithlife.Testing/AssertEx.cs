@@ -5,11 +5,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Faithlife.Json;
 using Faithlife.Utility;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework.Internal;
 
 namespace Faithlife.Testing
@@ -825,7 +825,7 @@ namespace Faithlife.Testing
 			{
 				try
 				{
-					return ToPrettyJson(obj, 1);
+					return ToPrettyJson(JsonUtility.ToJToken(obj), 1).Trim();
 				}
 				catch (Exception ex)
 				{
@@ -836,70 +836,47 @@ namespace Faithlife.Testing
 			return toString;
 		}
 
-		private static string ToPrettyJson(object obj, int tabLevel)
+		private static string ToPrettyJson(JToken token, int tabLevel)
 		{
-			var rawJson = JsonUtility.ToJson(obj, s_jsonWithTabs).Replace("\r\n", "\n");
-			var lines = rawJson.Split('\n').Select(l => l.Trim()).ToList();
-
-			// if json can fit on one line, return inlined
-			var shortJson = lines.Select(l => l + (l.EndsWithOrdinal(",") ? " " : "")).Join("");
-			if (shortJson.Length < c_maxJsonLength)
-				return shortJson;
-
-			// else construct pretty json output
-			var longJson = "";
-			for (var i = 0; i < lines.Count; i++)
+			var indent = new string('\t', tabLevel);
+			if (token.Type == JTokenType.Array)
 			{
-				var line = lines[i];
-				var hasArrayStart = line.EndsWithOrdinal("[");
-				var hasStart = hasArrayStart || line.EndsWithOrdinal("{");
-				var hasEnd = line.StartsWithOrdinal("]") || line.StartsWithOrdinal("}");
+				var children = token.Children();
+				if (!children.Any())
+					return indent + "[]";
 
-				if (hasArrayStart)
-				{
-					// try to inline the array if it's short and composed of primitives
-					var arrayLines = new List<string>();
-					var hasNested = false;
-					var j = i;
-					while (++j < lines.Count)
-					{
-						var arrayLine = lines[j];
-						if (arrayLine.StartsWithOrdinal("]"))
-							break;
+				var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
+				var shortJson = '[' + childLines.Select(l => l.Trim()).Join(", ") + ']';
+				if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
+					return indent + shortJson;
 
-						if (arrayLine.StartsWithOrdinal("[") || arrayLine.StartsWithOrdinal("{"))
-						{
-							hasNested = true;
-							break;
-						}
-
-						arrayLines.Add(arrayLine);
-					}
-
-					var shortArray = line + arrayLines.Join(" ") + lines[j];
-					if (!hasNested && shortArray.Length < c_maxJsonLength - tabLevel * 4)
-					{
-						longJson += new string('\t', tabLevel) + shortArray + '\n';
-						i = j;
-						continue;
-					}
-				}
-
-				if (hasEnd)
-					tabLevel--;
-
-				longJson += new string('\t', tabLevel) + line + '\n';
-
-				if (hasStart)
-					tabLevel++;
+				return indent + "[\n" + childLines.Join(",\n") + '\n' + indent + "]";
 			}
 
-			return longJson.TrimStart();
+			if (token.Type == JTokenType.Object)
+			{
+				var children = token.Children<JProperty>();
+				if (!children.Any())
+					return indent + "{}";
+
+				var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
+				var shortJson = "{ " + childLines.Select(l => l.Trim()).Join(", ") + " }";
+				if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
+					return indent + shortJson;
+
+				return indent + "{\n" + childLines.Join(",\n") + '\n' + indent + "}";
+			}
+
+			if (token.Type == JTokenType.Property)
+			{
+				var prop = token as JProperty;
+				return indent + '"' + prop.Name + "\": " + ToPrettyJson(prop.Value, tabLevel).Trim();
+			}
+
+			return indent + JsonUtility.ToJson(token);
 		}
 
 		private const int c_maxJsonLength = 100;
-
-		private static readonly JsonSettings s_jsonWithTabs = new JsonSettings { IsIndented = true };
 
 		// Includes Enumerable methods that (subjectively)
 		// (a) are more about *transforming* an enumerable than making *assertions* about the content of the enumerable, and
