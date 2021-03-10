@@ -839,41 +839,44 @@ namespace Faithlife.Testing
 		private static string ToPrettyJson(JToken token, int tabLevel)
 		{
 			var indent = new string('\t', tabLevel);
-			if (token.Type == JTokenType.Array)
+			switch (token.Type)
 			{
-				var children = token.Children();
-				if (!children.Any())
-					return indent + "[]";
+				case JTokenType.Array:
+				{
+					var children = token.Children();
+					if (!children.Any())
+						return indent + "[]";
 
-				var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
-				var shortJson = '[' + childLines.Select(l => l.Trim()).Join(", ") + ']';
-				if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
-					return indent + shortJson;
+					var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
+					var shortJson = '[' + childLines.Select(l => l.Trim()).Join(", ") + ']';
+					if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
+						return indent + shortJson;
 
-				return indent + "[\n" + childLines.Join(",\n") + '\n' + indent + "]";
+					return indent + "[\n" + childLines.Join(",\n") + '\n' + indent + "]";
+				}
+				case JTokenType.Object:
+				{
+					var children = token.Children<JProperty>();
+					if (!children.Any())
+						return indent + "{}";
+
+					var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
+					var shortJson = "{ " + childLines.Select(l => l.Trim()).Join(", ") + " }";
+					if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
+						return indent + shortJson;
+
+					return indent + "{\n" + childLines.Join(",\n") + '\n' + indent + "}";
+				}
+				case JTokenType.Property:
+				{
+					var prop = token as JProperty;
+					return indent + '"' + prop.Name + "\": " + ToPrettyJson(prop.Value, tabLevel).Trim();
+				}
+				default:
+				{
+					return indent + JsonUtility.ToJson(token);
+				}
 			}
-
-			if (token.Type == JTokenType.Object)
-			{
-				var children = token.Children<JProperty>();
-				if (!children.Any())
-					return indent + "{}";
-
-				var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
-				var shortJson = "{ " + childLines.Select(l => l.Trim()).Join(", ") + " }";
-				if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
-					return indent + shortJson;
-
-				return indent + "{\n" + childLines.Join(",\n") + '\n' + indent + "}";
-			}
-
-			if (token.Type == JTokenType.Property)
-			{
-				var prop = token as JProperty;
-				return indent + '"' + prop.Name + "\": " + ToPrettyJson(prop.Value, tabLevel).Trim();
-			}
-
-			return indent + JsonUtility.ToJson(token);
 		}
 
 		private const int c_maxJsonLength = 100;
