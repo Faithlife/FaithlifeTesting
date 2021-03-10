@@ -5,11 +5,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Faithlife.Json;
 using Faithlife.Utility;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework.Internal;
 
 namespace Faithlife.Testing
@@ -825,13 +825,7 @@ namespace Faithlife.Testing
 			{
 				try
 				{
-					// Prefer tabbed json for large objects, single-line JSON for short
-					var tabbyJson = JsonUtility.ToJson(obj, s_jsonWithTabs).Replace("\r\n", "\n");
-
-					if (tabbyJson.Length >= 100)
-						return tabbyJson;
-
-					return Regex.Replace(tabbyJson, @"\n\s*", " ");
+					return ToPrettyJson(JsonUtility.ToJToken(obj), 1).Trim();
 				}
 				catch (Exception ex)
 				{
@@ -842,7 +836,50 @@ namespace Faithlife.Testing
 			return toString;
 		}
 
-		private static readonly JsonSettings s_jsonWithTabs = new JsonSettings { IsIndented = true };
+		private static string ToPrettyJson(JToken token, int tabLevel)
+		{
+			var indent = new string('\t', tabLevel);
+			switch (token.Type)
+			{
+				case JTokenType.Array:
+				{
+					var children = token.Children();
+					if (!children.Any())
+						return indent + "[]";
+
+					var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
+					var shortJson = '[' + childLines.Select(l => l.Trim()).Join(", ") + ']';
+					if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
+						return indent + shortJson;
+
+					return indent + "[\n" + childLines.Join(",\n") + '\n' + indent + "]";
+				}
+				case JTokenType.Object:
+				{
+					var children = token.Children<JProperty>();
+					if (!children.Any())
+						return indent + "{}";
+
+					var childLines = children.Select(c => ToPrettyJson(c, tabLevel + 1)).AsReadOnlyList();
+					var shortJson = "{ " + childLines.Select(l => l.Trim()).Join(", ") + " }";
+					if (shortJson.Length + tabLevel * 4 < c_maxJsonLength)
+						return indent + shortJson;
+
+					return indent + "{\n" + childLines.Join(",\n") + '\n' + indent + "}";
+				}
+				case JTokenType.Property:
+				{
+					var prop = token as JProperty;
+					return indent + '"' + prop.Name + "\": " + ToPrettyJson(prop.Value, tabLevel).Trim();
+				}
+				default:
+				{
+					return indent + JsonUtility.ToJson(token);
+				}
+			}
+		}
+
+		private const int c_maxJsonLength = 100;
 
 		// Includes Enumerable methods that (subjectively)
 		// (a) are more about *transforming* an enumerable than making *assertions* about the content of the enumerable, and
