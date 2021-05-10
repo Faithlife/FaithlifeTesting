@@ -14,8 +14,14 @@ using NUnit.Framework.Internal;
 
 namespace Faithlife.Testing
 {
+	/// <summary>
+	/// Helper for writing assertions using expression trees.
+	/// </summary>
 	public static class AssertEx
 	{
+		/// <summary>
+		/// Asserts that <paramref name="predicateExpression"/> returns `true`.
+		/// </summary>
 		public static void Assert(Expression<Func<bool>> predicateExpression)
 		{
 			if (predicateExpression == null)
@@ -27,6 +33,10 @@ namespace Faithlife.Testing
 				NUnit.Framework.Assert.Fail(message);
 		}
 
+		/// <summary>
+		/// Starts a chain of assertions on <paramref name="value"/>.
+		/// Asserts that <paramref name="value"/> is not `null`.
+		/// </summary>
 		public static Builder<T> Select<T>(T value)
 			where T : class
 		{
@@ -41,6 +51,10 @@ namespace Faithlife.Testing
 			return new Builder<T>(value, () => value, ImmutableStack<(string Name, object Value)>.Empty);
 		}
 
+		/// <summary>
+		/// Starts a chain of assertions on the result of <paramref name="valueExpression"/>.
+		/// Asserts that the result of <paramref name="valueExpression"/> is not `null`.
+		/// </summary>
 		public static Builder<T> Select<T>(Expression<Func<T>> valueExpression)
 			where T : class
 		{
@@ -55,6 +69,9 @@ namespace Faithlife.Testing
 			return new Builder<T>(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 		}
 
+		/// <summary>
+		/// Asserts that the result of <paramref name="valueExpression"/> is not `null`.
+		/// </summary>
 		public static T Select<T>(Expression<Func<T?>> valueExpression)
 			where T : struct
 		{
@@ -69,12 +86,34 @@ namespace Faithlife.Testing
 			return value.Value;
 		}
 
+		/// <summary>
+		/// Adds informational context to all assertions made within the `IDisposable` scope.
+		/// </summary>
 		public static IDisposable Context(string name, object value) => Context((name, value));
+
+		/// <summary>
+		/// Adds informational context to all assertions made within the `IDisposable` scope.
+		/// </summary>
 		public static IDisposable Context((string Name, object Value) first, params (string Key, object Value)[] rest) => Context(rest.Prepend(first));
+
+		/// <summary>
+		/// Adds informational context to all assertions made within the `IDisposable` scope.
+		/// </summary>
 		public static IDisposable Context<TValue>(IReadOnlyDictionary<string, TValue> data) => Context(data.Select(x => (x.Key, (object) x.Value)));
+
+		/// <summary>
+		/// Adds informational context to all assertions made within the `IDisposable` scope.
+		/// </summary>
 		public static IDisposable Context(object context) => Context(GetContextFromObject(context));
+
+		/// <summary>
+		/// Adds informational context to all assertions made within the `IDisposable` scope.
+		/// </summary>
 		public static IDisposable Context(params Expression<Func<object>>[] contextExpressions) => Context(GetContextFromExpressions(contextExpressions));
 
+		/// <summary>
+		/// Adds informational context to all assertions made within the `IDisposable` scope.
+		/// </summary>
 		public static IDisposable Context(IEnumerable<(string Name, object Value)> context)
 		{
 			if (context == null)
@@ -93,20 +132,35 @@ namespace Faithlife.Testing
 			return Scope.Create(() => s_contextStack.Value = originalStack);
 		}
 
+		/// <summary>
+		/// Asserts that <paramref name="mapExpression" /> does not return `null`
+		/// and allows chaining further asserts on that <typeparamref name="T2"/> value.
+		/// </summary>
 		public static async Task<Builder<T2>> Select<T1, T2>(this Task<Builder<T1>> source, Expression<Func<T1, T2>> mapExpression)
 			where T1 : class
 			where T2 : class
 			=> (await source).Select(mapExpression);
 
+		/// <summary>
+		/// Asserts that <paramref name="mapExpression" /> does not return `null`
+		/// and allows chaining further asserts on that <typeparamref name="T2"/> value.
+		/// </summary>
 		public static async Task<T2> Select<T1, T2>(this Task<Builder<T1>> source, Expression<Func<T1, T2?>> mapExpression)
 			where T1 : class
 			where T2 : struct
 			=> (await source).Select(mapExpression);
 
+		/// <summary>
+		/// Asserts that <paramref name="predicateExpression" /> does not return `false`
+		/// and allows chaining further asserts on the current value.
+		/// </summary>
 		public static async Task<Builder<T1>> Assert<T1>(this Task<Builder<T1>> source, Expression<Func<T1, bool>> predicateExpression)
 			where T1 : class
 			=> (await source).Assert(predicateExpression);
 
+		/// <summary>
+		/// Allows making assertions about a particular value of type <typeparamref name="T1"/>
+		/// </summary>
 		public sealed class Builder<T1>
 			where T1 : class
 		{
@@ -117,6 +171,10 @@ namespace Faithlife.Testing
 				m_context = context;
 			}
 
+			/// <summary>
+			/// Asserts that <paramref name="mapExpression" /> does not return `null`
+			/// and allows chaining further asserts on that <typeparamref name="T2"/> value.
+			/// </summary>
 			public Builder<T2> Select<T2>(Expression<Func<T1, T2>> mapExpression)
 				where T2 : class
 			{
@@ -133,6 +191,9 @@ namespace Faithlife.Testing
 				return new Builder<T2>(value, valueExpression, m_context);
 			}
 
+			/// <summary>
+			/// Asserts that <paramref name="mapExpression" /> does not return `null`
+			/// </summary>
 			public T2 Select<T2>(Expression<Func<T1, T2?>> mapExpression)
 				where T2 : struct
 			{
@@ -149,6 +210,10 @@ namespace Faithlife.Testing
 				return value.Value;
 			}
 
+			/// <summary>
+			/// Asserts that <paramref name="predicateExpression" /> does not return `false`
+			/// and allows chaining further asserts on the current value.
+			/// </summary>
 			public Builder<T1> Assert(Expression<Func<T1, bool>> predicateExpression)
 			{
 				if (predicateExpression == null)
@@ -162,6 +227,10 @@ namespace Faithlife.Testing
 				return this;
 			}
 
+			/// <summary>
+			/// Asserts that <paramref name="assertionExpression" /> does not throw an exception
+			/// and allows chaining further asserts on the current value.
+			/// </summary>
 			public Builder<T1> Assert(Expression<Action<T1>> assertionExpression)
 			{
 				if (assertionExpression == null)
@@ -183,12 +252,34 @@ namespace Faithlife.Testing
 				return this;
 			}
 
+			/// <summary>
+			/// Adds informational context to all assertions made using this chain.
+			/// </summary>
 			public Builder<T1> Context(string name, object value) => Context((name, value));
+
+			/// <summary>
+			/// Adds informational context to all assertions made using this chain.
+			/// </summary>
 			public Builder<T1> Context((string Name, object Value) first, params (string Key, object Value)[] rest) => Context(rest.Prepend(first));
+
+			/// <summary>
+			/// Adds informational context to all assertions made using this chain.
+			/// </summary>
 			public Builder<T1> Context<TValue>(IReadOnlyDictionary<string, TValue> data) => Context(data.Select(x => (x.Key, (object) x.Value)));
+
+			/// <summary>
+			/// Adds informational context to all assertions made using this chain.
+			/// </summary>
 			public Builder<T1> Context(object context) => Context(GetContextFromObject(context));
+
+			/// <summary>
+			/// Adds informational context to all assertions made using this chain.
+			/// </summary>
 			public Builder<T1> Context(params Expression<Func<object>>[] contextExpressions) => Context(GetContextFromExpressions(contextExpressions));
 
+			/// <summary>
+			/// Adds informational context to all assertions made using this chain.
+			/// </summary>
 			public Builder<T1> Context(IEnumerable<(string Name, object Value)> context)
 			{
 				if (context == null)
@@ -205,9 +296,19 @@ namespace Faithlife.Testing
 				return new Builder<T1>(Value, m_valueExpression, newContext);
 			}
 
+			/// <summary>
+			/// The current value which assertions are made on.
+			/// </summary>
 			public T1 Value { get; }
 
+			/// <summary>
+			/// The current value which assertions are made on.
+			/// </summary>
+#pragma warning disable CA2225 // Operator overloads have named alternates
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
 			public static implicit operator T1(Builder<T1> source) => source?.Value ?? throw new ArgumentNullException(nameof(source));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+#pragma warning restore CA2225 // Operator overloads have named alternates
 
 			private Expression<Func<T2>> CoalesceWith<T2>(Expression<Func<T1, T2>> mapExpression)
 			{
@@ -235,10 +336,15 @@ namespace Faithlife.Testing
 			private readonly ImmutableStack<(string Name, object Value)> m_context;
 		}
 
-		private static IEnumerable<(string Name, object Value)> GetContextFromObject(object context) =>
-			context.GetType()
+		private static IEnumerable<(string Name, object Value)> GetContextFromObject(object context)
+		{
+			if (context == null)
+				throw new ArgumentNullException(nameof(context));
+
+			return context.GetType()
 				.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
 				.Select(prop => (prop.Name, prop.GetValue(context)));
+		}
 
 		private static IEnumerable<(string Name, object Value)> GetContextFromExpressions(IEnumerable<Expression<Func<object>>> contextExpressions) =>
 			contextExpressions.SelectMany(contextExpression =>
@@ -664,7 +770,7 @@ namespace Faithlife.Testing
 				Right,
 			}
 
-			private readonly Dictionary<string, object> m_debugValues = new Dictionary<string, object>();
+			private readonly Dictionary<string, object> m_debugValues = new();
 		}
 
 		private static bool TryExtractDebugValue(Expression expression, Dictionary<string, object> debugValues, out string expressionText)
@@ -884,8 +990,8 @@ namespace Faithlife.Testing
 		// Includes Enumerable methods that (subjectively)
 		// (a) are more about *transforming* an enumerable than making *assertions* about the content of the enumerable, and
 		// (b) only have one "primary" argument being transformed.
-		private static readonly HashSet<string> s_debugValueEnumerableMethods = new HashSet<string> { "Select", "Where", "SelectMany", "Take", "Skip", "TakeWhile", "SkipWhile", "OrderBy", "ThenBy", "OrderByDescending", "ThenByDescending", "Distinct", "Reverse", "AsEnumerable", "ToArray", "ToList", "ToDictionary", "ToLookup", "ToHashSet" };
+		private static readonly HashSet<string> s_debugValueEnumerableMethods = new() { "Select", "Where", "SelectMany", "Take", "Skip", "TakeWhile", "SkipWhile", "OrderBy", "ThenBy", "OrderByDescending", "ThenByDescending", "Distinct", "Reverse", "AsEnumerable", "ToArray", "ToList", "ToDictionary", "ToLookup", "ToHashSet" };
 
-		private static readonly AsyncLocal<ImmutableStack<(string Name, object Value)>> s_contextStack = new AsyncLocal<ImmutableStack<(string Name, object Value)>>();
+		private static readonly AsyncLocal<ImmutableStack<(string Name, object Value)>> s_contextStack = new();
 	}
 }

@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 
 namespace Faithlife.Testing.RabbitMq
 {
-	public struct LazyTask<TResult>
+#pragma warning disable CA1815 // Override equals and operator equals on value types
+	public readonly struct LazyTask<TResult>
+#pragma warning restore CA1815 // Override equals and operator equals on value types
 	{
 		public LazyTask(Func<Task<TResult>> onAwaited)
 		{

@@ -656,10 +656,10 @@ Actual:
 
 			if (expectStackTrace)
 			{
-				Assert.AreEqual(expectedMessage, assertion.Message.Substring(0, expectedMessage.Length), assertion.Message);
+				Assert.AreEqual(expectedMessage, assertion.Message[..expectedMessage.Length], assertion.Message);
 				Assert.AreNotEqual(expectedMessage.Length, assertion.Message.Length, "Expected stack trace, got: " + expectedMessage);
-				foreach (var line in assertion.Message.Substring(expectedMessage.Length).Split('\n').Select(line => line.Trim()).Where(line => line.Length > 0))
-					Assert.AreEqual("at ", line.Substring(0, 3), line);
+				foreach (var line in assertion.Message[expectedMessage.Length..].Split('\n').Select(line => line.Trim()).Where(line => line.Length > 0))
+					Assert.AreEqual("at ", line[..3], line);
 			}
 			else
 			{
@@ -688,7 +688,9 @@ Actual:
 
 		private sealed class FooImpl : FooBase
 		{
+#pragma warning disable CA1822 // Mark members as static
 			public void DoFalseAssert()
+#pragma warning restore CA1822 // Mark members as static
 			{
 				AssertEx.Assert(() => Bar == "Buzz");
 			}

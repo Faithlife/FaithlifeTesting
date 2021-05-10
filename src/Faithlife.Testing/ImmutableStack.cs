@@ -16,13 +16,11 @@ namespace Faithlife.Testing
 		{
 		}
 
-#pragma warning disable CA1000 // Do not declare static members on generic types
-		public static ImmutableStack<T> Empty { get; } = new ImmutableStack<T>();
-#pragma warning restore CA1000 // Do not declare static members on generic types
+		public static ImmutableStack<T> Empty { get; } = new();
 
 		public bool IsEmpty => m_tail == null;
 
-		public ImmutableStack<T> Push(T value) => new ImmutableStack<T>(value, this);
+		public ImmutableStack<T> Push(T value) => new(value, this);
 
 		IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
 

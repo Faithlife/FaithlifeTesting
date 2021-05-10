@@ -84,9 +84,9 @@ namespace Faithlife.Testing.Tests.UnitTests
 Context:
 	";
 			Assert.LessOrEqual(expectedMessage.Length, assertion.Message.Length, assertion.Message);
-			Assert.AreEqual(expectedMessage, assertion.Message.Substring(0, expectedMessage.Length), assertion.Message);
+			Assert.AreEqual(expectedMessage, assertion.Message[..expectedMessage.Length], assertion.Message);
 			Assert.AreNotEqual(expectedMessage.Length, assertion.Message.Length, "Expected Context, got: " + expectedMessage);
-			Assert.AreEqual(expectedContext, assertion.Message.Substring(expectedMessage.Length), assertion.Message);
+			Assert.AreEqual(expectedContext, assertion.Message[expectedMessage.Length..], assertion.Message);
 		}
 
 		private static void AssertHasContext(Func<AssertEx.Builder<object>, AssertEx.Builder<object>> addContext, string expectedContext)
@@ -101,9 +101,9 @@ Context:
 Context:
 	";
 			Assert.LessOrEqual(expectedMessage.Length, assertion.Message.Length, assertion.Message);
-			Assert.AreEqual(expectedMessage, assertion.Message.Substring(0, expectedMessage.Length), assertion.Message);
+			Assert.AreEqual(expectedMessage, assertion.Message[..expectedMessage.Length], assertion.Message);
 			Assert.AreNotEqual(expectedMessage.Length, assertion.Message.Length, "Expected Context, got: " + expectedMessage);
-			Assert.AreEqual(expectedContext, assertion.Message.Substring(expectedMessage.Length), assertion.Message);
+			Assert.AreEqual(expectedContext, assertion.Message[expectedMessage.Length..], assertion.Message);
 		}
 	}
 }
