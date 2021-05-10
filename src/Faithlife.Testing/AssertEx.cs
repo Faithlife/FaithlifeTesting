@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Faithlife.Json;
+using Faithlife.Testing.TestFrameworks;
 using Faithlife.Utility;
 using Newtonsoft.Json.Linq;
-using NUnit.Framework.Internal;
 
 namespace Faithlife.Testing
 {
@@ -30,7 +30,7 @@ namespace Faithlife.Testing
 			var message = GetMessageIfFalse(predicateExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (message != null)
-				NUnit.Framework.Assert.Fail(message);
+				TestFrameworkProvider.Fail(message);
 		}
 
 		/// <summary>
@@ -42,7 +42,7 @@ namespace Faithlife.Testing
 		{
 			if (value == null)
 			{
-				NUnit.Framework.Assert.Fail(GetMessage(() => value));
+				TestFrameworkProvider.Fail(GetMessage(() => value));
 
 				static string GetMessage(Expression<Func<T>> valueExpression)
 					=> GetDiagnosticMessage(valueExpression.Body, null, ImmutableStack<(string Name, object Value)>.Empty);
@@ -64,7 +64,7 @@ namespace Faithlife.Testing
 			var (value, message) = GetValueOrNullMessage(valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (message != null)
-				NUnit.Framework.Assert.Fail(message);
+				TestFrameworkProvider.Fail(message);
 
 			return new Builder<T>(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 		}
@@ -81,7 +81,7 @@ namespace Faithlife.Testing
 			var (value, message) = GetValueOrNullMessage(valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (!value.HasValue)
-				NUnit.Framework.Assert.Fail(message);
+				TestFrameworkProvider.Fail(message);
 
 			return value.Value;
 		}
@@ -186,7 +186,7 @@ namespace Faithlife.Testing
 				var (value, message) = GetValueOrNullMessage(valueExpression, m_context);
 
 				if (message != null)
-					NUnit.Framework.Assert.Fail(message);
+					TestFrameworkProvider.Fail(message);
 
 				return new Builder<T2>(value, valueExpression, m_context);
 			}
@@ -205,7 +205,7 @@ namespace Faithlife.Testing
 				var (value, message) = GetValueOrNullMessage(valueExpression, m_context);
 
 				if (message != null)
-					NUnit.Framework.Assert.Fail(message);
+					TestFrameworkProvider.Fail(message);
 
 				return value.Value;
 			}
@@ -222,7 +222,7 @@ namespace Faithlife.Testing
 				var message = GetMessageIfFalse(CoalesceWith(predicateExpression), m_context);
 
 				if (message != null)
-					NUnit.Framework.Assert.Fail(message);
+					TestFrameworkProvider.Fail(message);
 
 				return this;
 			}
@@ -246,7 +246,7 @@ namespace Faithlife.Testing
 				}
 				catch (Exception exception)
 				{
-					NUnit.Framework.Assert.Fail(GetDiagnosticMessage(coalescedAssertion.Body, exception, m_context));
+					TestFrameworkProvider.Fail(GetDiagnosticMessage(coalescedAssertion.Body, exception, m_context));
 				}
 
 				return this;
@@ -369,7 +369,7 @@ namespace Faithlife.Testing
 			var predicateFunc = valueExpression.Compile();
 			Exception e = null;
 
-			using (new TestExecutionContext.IsolatedContext())
+			using (TestFrameworkProvider.GetIsolatedContext())
 			{
 				try
 				{
@@ -391,7 +391,7 @@ namespace Faithlife.Testing
 			var predicateFunc = predicateExpression.Compile();
 			Exception e = null;
 
-			using (new TestExecutionContext.IsolatedContext())
+			using (TestFrameworkProvider.GetIsolatedContext())
 			{
 				try
 				{
