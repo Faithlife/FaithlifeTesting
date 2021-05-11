@@ -46,6 +46,8 @@ namespace Faithlife.Testing
 
 				static string GetMessage(Expression<Func<T>> valueExpression)
 					=> GetDiagnosticMessage(valueExpression.Body, null, ImmutableStack<(string Name, object Value)>.Empty);
+
+				return Builder<T>.NoOp();
 			}
 
 			return new Builder<T>(value, () => value, ImmutableStack<(string Name, object Value)>.Empty);
@@ -64,7 +66,10 @@ namespace Faithlife.Testing
 			var (value, message) = GetValueOrNullMessage(valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 
 			if (message != null)
+			{
 				TestFrameworkProvider.Fail(message);
+				return Builder<T>.NoOp();
+			}
 
 			return new Builder<T>(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty);
 		}
@@ -164,9 +169,11 @@ namespace Faithlife.Testing
 		public sealed class Builder<T1>
 			where T1 : class
 		{
+			internal static Builder<T1> NoOp() => new(null, null, ImmutableStack<(string Name, object Value)>.Empty);
+
 			internal Builder(T1 value, Expression<Func<T1>> valueExpression, ImmutableStack<(string Name, object Value)> context)
 			{
-				Value = value;
+				Value = value ;
 				m_valueExpression = valueExpression;
 				m_context = context;
 			}
@@ -181,12 +188,18 @@ namespace Faithlife.Testing
 				if (mapExpression == null)
 					throw new ArgumentNullException(nameof(mapExpression));
 
+				if (IsNoOp)
+					return Builder<T2>.NoOp();
+
 				var valueExpression = CoalesceWith(mapExpression);
 
 				var (value, message) = GetValueOrNullMessage(valueExpression, m_context);
 
 				if (message != null)
+				{
 					TestFrameworkProvider.Fail(message);
+					return Builder<T2>.NoOp();
+				}
 
 				return new Builder<T2>(value, valueExpression, m_context);
 			}
@@ -199,6 +212,9 @@ namespace Faithlife.Testing
 			{
 				if (mapExpression == null)
 					throw new ArgumentNullException(nameof(mapExpression));
+
+				if (IsNoOp)
+					throw new InvalidOperationException("A previous assertion failed.");
 
 				var valueExpression = CoalesceWith(mapExpression);
 
@@ -219,10 +235,13 @@ namespace Faithlife.Testing
 				if (predicateExpression == null)
 					throw new ArgumentNullException(nameof(predicateExpression));
 
-				var message = GetMessageIfFalse(CoalesceWith(predicateExpression), m_context);
+				if (!IsNoOp)
+				{
+					var message = GetMessageIfFalse(CoalesceWith(predicateExpression), m_context);
 
-				if (message != null)
-					TestFrameworkProvider.Fail(message);
+					if (message != null)
+						TestFrameworkProvider.Fail(message);
+				}
 
 				return this;
 			}
@@ -235,6 +254,9 @@ namespace Faithlife.Testing
 			{
 				if (assertionExpression == null)
 					throw new ArgumentNullException(nameof(assertionExpression));
+
+				if (IsNoOp)
+					return this;
 
 				var visitor = new ReplaceParameterWithExpressionVisitor(assertionExpression.Parameters, m_valueExpression.Body);
 				var coalescedAssertion = Expression.Lambda<Action>(visitor.Visit(assertionExpression.Body));
@@ -251,6 +273,7 @@ namespace Faithlife.Testing
 
 				return this;
 			}
+
 
 			/// <summary>
 			/// Adds informational context to all assertions made using this chain.
@@ -309,6 +332,8 @@ namespace Faithlife.Testing
 			public static implicit operator T1(Builder<T1> source) => source?.Value ?? throw new ArgumentNullException(nameof(source));
 #pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 #pragma warning restore CA2225 // Operator overloads have named alternates
+
+			private bool IsNoOp => m_valueExpression == null;
 
 			private Expression<Func<T2>> CoalesceWith<T2>(Expression<Func<T1, T2>> mapExpression)
 			{

@@ -640,6 +640,56 @@ Actual:
 	Bar = ""Baz""", expectStackTrace: false);
 		}
 
+		[Test]
+		public void AssertMultipleNoop()
+		{
+			var assertion = Assert.Throws<MultipleAssertException>(() =>
+			{
+				Assert.Multiple(() =>
+				{
+					string foo = null;
+					AssertEx.Select(() => foo)
+						.Assert(a => a.Length == 5);
+				});
+			});
+
+			AreMostlyEqual(@"Expected:
+	foo
+
+Actual:
+	foo = null",
+				assertion.Message);
+		}
+
+		[Test]
+		public void AssertMultiple()
+		{
+			var assertion = Assert.Throws<MultipleAssertException>(() =>
+			{
+				Assert.Multiple(() =>
+				{
+					var foo = "bar";
+					AssertEx.Select(() => foo)
+						.Assert(a => a.Length == 5)
+						.Assert(a => a.Length == 4);
+				});
+			});
+
+			AreMostlyEqual(@"Multiple failures or warnings in test:
+  1) Expected:
+	foo.Length == 5
+
+Actual:
+	foo.Length = 3
+  2) Expected:
+	foo.Length == 4
+
+Actual:
+	foo.Length = 3
+",
+				assertion.Message);
+		}
+
 		private static void AssertThrowsAssertionWithStackTrace<T>(Expression<Func<T>> expression, string expectedMessage)
 			where T : class
 			=> AssertThrowsAssertion(() => AssertEx.Select(expression), expectedMessage, expectStackTrace: true);
@@ -666,6 +716,10 @@ Actual:
 				Assert.AreEqual(expectedMessage, assertion.Message, assertion.Message);
 			}
 		}
+
+		private static void AreMostlyEqual(string expected, string actual) => Assert.AreEqual(
+			expected?.Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase),
+			actual?.Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase));
 
 		private sealed class FooDto
 		{
