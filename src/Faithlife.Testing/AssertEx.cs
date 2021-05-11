@@ -384,7 +384,7 @@ namespace Faithlife.Testing
 					}
 					catch (Exception ex)
 					{
-						return (object) ex;
+						return ex;
 					}
 				}, LazyThreadSafetyMode.ExecutionAndPublication)));
 			});
@@ -810,7 +810,7 @@ namespace Faithlife.Testing
 				addedToChain = false;
 				while (current is MemberExpression me)
 				{
-					if (me.Member is FieldInfo fi && fi.IsPrivate && fi.IsStatic)
+					if (me.Member is FieldInfo { IsPrivate: true, IsStatic: true } fi)
 					{
 						// Private static members need not be qualified
 						chain.Add((fi.Name, current));
@@ -818,7 +818,8 @@ namespace Faithlife.Testing
 						break;
 					}
 
-					if (me.Expression is ConstantExpression)
+					// Identifiers containing __ are "reserved for use by the implementation" -- e.g. auto-generated and not interesting.
+					if (me.Expression is ConstantExpression || (me.Expression is MemberExpression metoo && metoo.Member.Name.Contains("__")))
 					{
 						// Captured varaibles in lambdas are represented as members on an auto-generated <>c__DisplayClass
 						// Captured members are also constants
