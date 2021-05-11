@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -52,268 +51,263 @@ namespace Faithlife.Testing.Tests.UnitTests
 			AssertEx.Assert(() => a == 1 && b == 3);
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	false")]
 		public void TestFalseConstant()
 		{
 			// This is silly, but not worth preventing.
-			AssertThrowsAssertion(() => false, @"Expected:
-	false");
+			AssertEx.Assert(() => false);
 		}
 
-		[Test]
-		public void TestBooleanVariable()
-		{
-			var value = false;
-			AssertThrowsAssertion(() => value, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value
 
 Actual:
-	value = false");
+	value = false")]
+		public void TestBooleanVariable()
+		{
+			var value = false;
+			AssertEx.Assert(() => value);
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	value == 2
+
+Actual:
+	value = 1")]
 		public void TestVariableEquals()
 		{
 			var value = 1;
-			AssertThrowsAssertion(() => value == 2, @"Expected:
+			AssertEx.Assert(() => value == 2);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	value == 2
 
 Actual:
-	value = 1");
-		}
-
-		[Test]
+	value = 1")]
 		public void TestNullableConvert()
 		{
 			int? value = 1;
-			AssertThrowsAssertion(() => value == 2, @"Expected:
-	value == 2
-
-Actual:
-	value = 1");
+			AssertEx.Assert(() => value == 2);
 		}
 
-		[Test]
-		public void TestNot()
-		{
-			var value = true;
-			AssertThrowsAssertion(() => !value, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	!value
 
 Actual:
-	value = true");
+	value = true")]
+		public void TestNot()
+		{
+			var value = true;
+			AssertEx.Assert(() => !value);
 		}
 
-		[Test]
-		public void TestMember()
-		{
-			var value = 2;
-			AssertThrowsAssertion(() => value == m_member, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value == m_member
 
 Actual:
 	value = 2
-	m_member = 1");
-		}
-
-		[Test]
-		public void TestStaticMember()
+	m_member = 1")]
+		public void TestMember()
 		{
 			var value = 2;
-			AssertThrowsAssertion(() => value == s_member, @"Expected:
+			AssertEx.Assert(() => value == m_member);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	value == s_member
 
 Actual:
 	value = 2
-	s_member = 1");
-		}
-
-		[Test]
-		public void TestConstant()
+	s_member = 1")]
+		public void TestStaticMember()
 		{
 			var value = 2;
-			AssertThrowsAssertion(() => value == c_member, @"Expected:
+			AssertEx.Assert(() => value == s_member);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	value == 1
 
 Actual:
-	value = 2");
+	value = 2")]
+		public void TestConstant()
+		{
+			var value = 2;
+			AssertEx.Assert(() => value == c_member);
 		}
 
-		[Test]
-		public void TestAny()
-		{
-			var value = Array.Empty<int>();
-			AssertThrowsAssertion(() => value.Any(), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value.Any()
 
 Actual:
-	value = []");
+	value = []")]
+		public void TestAny()
+		{
+			var value = Array.Empty<int>();
+			AssertEx.Assert(() => value.Any());
 		}
 
-		[Test]
-		public void TestSingle()
-		{
-			var value = Array.Empty<FooDto>();
-			AssertThrowsAssertionWithStackTrace(() => value.Single(), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value.Single()
 
 Actual:
 	value = []
 
-System.InvalidOperationException: Sequence contains no elements");
+System.InvalidOperationException: Sequence contains no elements",
+			expectStackTrace:true)]
+		public void TestSingle()
+		{
+			var value = Array.Empty<FooDto>();
+			AssertEx.Select(() => value.Single());
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	value[0] == 1
+
+Actual:
+	value = [2]")]
 		public void TestArrayIndex()
 		{
 			var value = new[] { 2 };
-			AssertThrowsAssertion(() => value[0] == 1, @"Expected:
+			AssertEx.Assert(() => value[0] == 1);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	value[0] == 1
 
 Actual:
-	value = [2]");
-		}
-
-		[Test]
+	value = [2]")]
 		public void TestListIndex()
 		{
 			var value = new List<int> { 2 };
-			AssertThrowsAssertion(() => value[0] == 1, @"Expected:
-	value[0] == 1
-
-Actual:
-	value = [2]");
+			AssertEx.Assert(() => value[0] == 1);
 		}
 
-		[Test]
-		public void TestDictionaryIndex()
-		{
-			var value = new Dictionary<string, int>();
-			AssertThrowsAssertionWithStackTrace(() => value["foo"] == 1, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value[""foo""] == 1
 
 Actual:
 	value = {}
 
-System.Collections.Generic.KeyNotFoundException: The given key 'foo' was not present in the dictionary.");
+System.Collections.Generic.KeyNotFoundException: The given key 'foo' was not present in the dictionary.",
+			expectStackTrace:true)]
+		public void TestDictionaryIndex()
+		{
+			var value = new Dictionary<string, int>();
+			AssertEx.Assert(() => value["foo"] == 1);
 		}
 
-		[Test]
-		public void TestNestedPredicate()
-		{
-			var value = new[] { 1 };
-			AssertThrowsAssertion(() => value.Any(x => x == 2), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value.Any(x => x == 2)
 
 Actual:
-	value = [1]");
+	value = [1]")]
+		public void TestNestedPredicate()
+		{
+			var value = new[] { 1 };
+			AssertEx.Assert(() => value.Any(x => x == 2));
 		}
 
-		[Test]
-		public void TestLinqMethodNull()
-		{
-			int[] value = null;
-			AssertThrowsAssertionWithStackTrace(() => value.Any(), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value.Any()
 
 Actual:
 	value = null
 
-System.ArgumentNullException: Value cannot be null. (Parameter 'source')");
+System.ArgumentNullException: Value cannot be null. (Parameter 'source')", expectStackTrace:true)]
+		public void TestLinqMethodNull()
+		{
+			int[] value = null;
+			AssertEx.Assert(() => value.Any());
 		}
 
-		[Test]
-		public void TestBooleanLogic()
-		{
-			var a = 2;
-			var b = 4;
-			AssertThrowsAssertion(() => a == 1 || b == 3, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	a == 1 || b == 3
 
 Actual:
 	a = 2
-	b = 4");
-		}
-
-		[Test]
-		public void TestAndChainIncludesAllFalse()
+	b = 4")]
+		public void TestBooleanLogic()
 		{
 			var a = 2;
 			var b = 4;
-			AssertThrowsAssertion(() => a == 1 && b == 3, @"Expected:
+			AssertEx.Assert(() => a == 1 || b == 3);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	a == 1
 	&& b == 3
 
 Actual:
 	a = 2
-	b = 4");
+	b = 4")]
+		public void TestAndChainIncludesAllFalse()
+		{
+			var a = 2;
+			var b = 4;
+			AssertEx.Assert(() => a == 1 && b == 3);
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	b == 3
+
+Actual:
+	b = 4")]
 		public void TestAndChainIncludesOnlyFalse()
 		{
 			var a = 1;
 			var b = 4;
-			AssertThrowsAssertion(() => a == 1 && b == 3, @"Expected:
-	b == 3
-
-Actual:
-	b = 4");
+			AssertEx.Assert(() => a == 1 && b == 3);
 		}
 
-		[Test]
-		public void TestPrecedence()
-		{
-			var a = 1;
-			var b = 4;
-			var c = 5;
-			AssertThrowsAssertion(() => (a + b) * c == 0, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	(a + b) * c == 0
 
 Actual:
 	a = 1
 	b = 4
-	c = 5");
-		}
-
-		[Test]
-		public void TestAssociativityMinus()
+	c = 5")]
+		public void TestPrecedence()
 		{
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertThrowsAssertion(() => a - (b - c) == -8, @"Expected:
+			AssertEx.Assert(() => (a + b) * c == 0);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	a - (b - c) == -8
 
 Actual:
 	a = 1
 	b = 4
-	c = 5");
-		}
-
-		[Test]
-		public void TestAssociativityPlus()
+	c = 5")]
+		public void TestAssociativityMinus()
 		{
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertThrowsAssertion(() => a - (b + c) == 2, @"Expected:
+			AssertEx.Assert(() => a - (b - c) == -8);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	a - (b + c) == 2
 
 Actual:
 	a = 1
 	b = 4
-	c = 5");
+	c = 5")]
+		public void TestAssociativityPlus()
+		{
+			var a = 1;
+			var b = 4;
+			var c = 5;
+			AssertEx.Assert(() => a - (b + c) == 2);
 		}
 
-		[Test]
-		public void TestBooleanLogicWrapping()
-		{
-			var a = Array.Empty<string>();
-			var b = Array.Empty<string>();
-			var c = Array.Empty<string>();
-			var d = Array.Empty<string>();
-			AssertThrowsAssertion(() => a.Any(x => x.Length == 5) && b.Any(x => x.Length == 5) && c.Any(x => x.Length == 5) && d.Any(x => x.Length == 5), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	a.Any(x => x.Length == 5)
 	&& b.Any(x => x.Length == 5)
 	&& c.Any(x => x.Length == 5)
@@ -323,95 +317,102 @@ Actual:
 	a = []
 	b = []
 	c = []
-	d = []");
+	d = []")]
+		public void TestBooleanLogicWrapping()
+		{
+			var a = Array.Empty<string>();
+			var b = Array.Empty<string>();
+			var c = Array.Empty<string>();
+			var d = Array.Empty<string>();
+			AssertEx.Assert(() => a.Any(x => x.Length == 5) && b.Any(x => x.Length == 5) && c.Any(x => x.Length == 5) && d.Any(x => x.Length == 5));
 		}
 
-		[Test]
-		public void TestDtoProperty()
-		{
-			var foo = new FooDto { Id = "1", Bar = "Fizz" };
-
-			AssertThrowsAssertion(() => foo.Bar == "Buzz", @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foo.Bar == ""Buzz""
 
 Actual:
-	foo.Bar = ""Fizz""");
+	foo.Bar = ""Fizz""")]
+		public void TestDtoProperty()
+		{
+			var foo = new FooDto { Id = "1", Bar = "Fizz" };
+			AssertEx.Assert(() => foo.Bar == "Buzz");
 		}
 
-		[Test]
-		public void TestDtoPropertyNull()
-		{
-			FooDto foo = null;
-
-			AssertThrowsAssertionWithStackTrace(() => foo.Bar == "Buzz", @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foo.Bar == ""Buzz""
 
 Actual:
 	foo = null
 
-System.NullReferenceException: Object reference not set to an instance of an object.");
+System.NullReferenceException: Object reference not set to an instance of an object.",
+			expectStackTrace:true)]
+		public void TestDtoPropertyNull()
+		{
+			FooDto foo = null;
+
+			AssertEx.Assert(() => foo.Bar == "Buzz");
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	foo != null
+
+Actual:
+	foo = null")]
 		public void TestDtoPropertyNullWithCheck()
 		{
 			FooDto foo = null;
 
-			AssertThrowsAssertion(() => foo != null && foo.Bar == "Buzz", @"Expected:
-	foo != null
-
-Actual:
-	foo = null");
+			AssertEx.Assert(() => foo != null && foo.Bar == "Buzz");
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	false
+
+Context:
+	value = 1")]
 		public void TestContextCapturedVariable()
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertThrowsAssertion(() => false, @"Expected:
-	false
-
-Context:
-	value = 1");
+			AssertEx.Assert(() => false);
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	value == 2
+
+Actual:
+	value = 1")]
 		public void TestContextDuplicateCapturedActualVariable()
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertThrowsAssertion(() => value == 2, @"Expected:
-	value == 2
-
-Actual:
-	value = 1");
+			AssertEx.Assert(() => value == 2);
 		}
 
-		[Test]
+		[Test, ExpectedMessage(@"Expected:
+	false
+
+Context:
+	value = 1")]
 		public void TestContextDuplicateCapturedContextVariable()
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
 			using var e = AssertEx.Context(() => value);
-			AssertThrowsAssertion(() => false, @"Expected:
+			AssertEx.Assert(() => false);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	false
 
 Context:
-	value = 1");
-		}
-
-		[Test]
+	1 = 1")]
 		public void TestContextConstant()
 		{
 			// This is a bit silly; test is more to document the silly rather than preserve it.
 			const int value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertThrowsAssertion(() => false, @"Expected:
-	false
-
-Context:
-	1 = 1");
+			AssertEx.Assert(() => false);
 		}
 
 		[Test]
@@ -426,10 +427,7 @@ Context:
 					{
 						var firstTask = 1;
 						using var e = AssertEx.Context(() => firstTask);
-						AssertThrowsAssertion(() => false, @"Expected:
-	false
-
-Context:
+						AssertHasContext(@"
 	firstTask = 1
 	value = 1");
 					}),
@@ -438,120 +436,115 @@ Context:
 					{
 						var secondTask = 1;
 						using var e = AssertEx.Context(() => secondTask);
-						AssertThrowsAssertion(() => false, @"Expected:
-	false
-
-Context:
+						AssertHasContext(@"
 	secondTask = 1
 	value = 1");
 					}));
 
-			AssertThrowsAssertion(() => false, @"Expected:
+			AssertHasContext(@"
+	value = 1");
+
+			void AssertHasContext(string expectedContext)
+			{
+				var assertion = Assert.Throws<AssertionException>(() => AssertEx.Assert(() => false));
+				new ExpectedMessageAttribute(@$"Expected:
 	false
 
-Context:
-	value = 1");
+Context:{expectedContext}", expectStackTrace:false)
+					.AssertMessageIsExpected(assertion.Message);
+			}
 		}
 
-		[Test]
-		public void TestSelect()
-		{
-			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" }, };
-
-			AssertThrowsAssertion(() => foos.Select(f => f.Baz).Contains(2), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foos.Select(f => f.Baz).Contains(2)
 
 Actual:
-	foos.Select(f => f.Baz) = [1]");
+	foos.Select(f => f.Baz) = [1]")]
+		public void TestSelect()
+		{
+			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" } };
+			AssertEx.Assert(() => foos.Select(f => f.Baz).Contains(2));
 		}
 
-		[Test]
-		public void TestSelectWithCapture()
-		{
-			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" }, };
-			var value = 1;
-
-			AssertThrowsAssertion(() => foos.Select(f => f.Baz + value).Contains(1), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foos.Select(f => f.Baz + value).Contains(1)
 
 Actual:
 	value = 1
-	foos.Select(f => f.Baz + value) = [2]");
+	foos.Select(f => f.Baz + value) = [2]")]
+		public void TestSelectWithCapture()
+		{
+			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" } };
+			var value = 1;
+			AssertEx.Assert(() => foos.Select(f => f.Baz + value).Contains(1));
 		}
 
-		[Test]
-		public void TestAnyWithNullElements()
-		{
-			var foos = new[] { null, new FooDto { Baz = 1, Bar = "Buzz" } };
-
-			AssertThrowsAssertionWithStackTrace(() => foos.Any(f => f.Bar.Length == 4), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foos.Any(f => f.Bar.Length == 4)
 
 Actual:
 	foos = [null, { ""bar"": ""Buzz"", ""baz"": 1 }]
 
-System.NullReferenceException: Object reference not set to an instance of an object.");
+System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace:true)]
+		public void TestAnyWithNullElements()
+		{
+			var foos = new[] { null, new FooDto { Baz = 1, Bar = "Buzz" } };
+
+			AssertEx.Assert(() => foos.Any(f => f.Bar.Length == 4));
 		}
 
-		[Test]
-		public void TestAnyWithNullProperties()
-		{
-			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
-
-			AssertThrowsAssertionWithStackTrace(() => foos.Any(f => f.Bar.Length == 4), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foos.Any(f => f.Bar.Length == 4)
 
 Actual:
 	foos = [{ ""baz"": 2 }, { ""bar"": ""Buzz"", ""baz"": 1 }]
 
-System.NullReferenceException: Object reference not set to an instance of an object.");
-		}
-
-		[Test]
-		public void TestAll()
+System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace:true)]
+		public void TestAnyWithNullProperties()
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertThrowsAssertion(() => foos.All(f => f.Baz == 1), @"Expected:
+			AssertEx.Assert(() => foos.Any(f => f.Bar.Length == 4));
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	foos.All(f => f.Baz == 1)
 
 Actual:
-	foos[0] = { ""baz"": 2 }");
-		}
-
-		[Test]
-		public void TestNotAny()
+	foos[0] = { ""baz"": 2 }")]
+		public void TestAll()
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
+			AssertEx.Assert(() => foos.All(f => f.Baz == 1));
+		}
 
-			AssertThrowsAssertion(() => !foos.Any(f => f.Baz == 2), @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	!foos.Any(f => f.Baz == 2)
 
 Actual:
-	foos[0] = { ""baz"": 2 }");
+	foos[0] = { ""baz"": 2 }")]
+		public void TestNotAny()
+		{
+			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
+			// ReSharper disable once SimplifyLinqExpressionUseAll
+			AssertEx.Assert(() => !foos.Any(f => f.Baz == 2));
 		}
 
-		[Test]
-		public void TestLargeObjectFormatting()
-		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 } };
-
-			AssertThrowsAssertion(() => bar == null, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	bar == null
 
 Actual:
 	bar = {
 		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
 		""foo"": { ""bar"": ""hashtag yolo swag"", ""baz"": 1 }
-	}");
+	}")]
+		public void TestLargeObjectFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 } };
+			AssertEx.Assert(() => bar == null);
 		}
 
-		[Test]
-		public void TestLargeObjectWithSmallArrayFormatting()
-		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 }, Ints = new[] { 1, 2, 3 } };
-
-			AssertThrowsAssertion(() => bar == null, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	bar == null
 
 Actual:
@@ -559,15 +552,14 @@ Actual:
 		""text"": ""Oogity Boogity Boo, The Krampus comes for you."",
 		""ints"": [1, 2, 3],
 		""foo"": { ""bar"": ""hashtag yolo swag"", ""baz"": 1 }
-	}");
+	}")]
+		public void TestLargeObjectWithSmallArrayFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 }, Ints = new[] { 1, 2, 3 } };
+			AssertEx.Assert(() => bar == null);
 		}
 
-		[Test]
-		public void TestLargeObjectWithLargeArrayFormatting()
-		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 } };
-
-			AssertThrowsAssertion(() => bar == null, @"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	bar == null
 
 Actual:
@@ -601,81 +593,63 @@ Actual:
 			25,
 			26
 		]
-	}");
+	}")]
+		public void TestLargeObjectWithLargeArrayFormatting()
+		{
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 } };
+			AssertEx.Assert(() => bar == null);
 		}
 
-		[Test, Explicit("TODO: Fix this")]
+		[Test, Explicit("TODO: Fix this"), ExpectedMessage(@"Expected:
+	string.Equals(""bar"", foo, StringComparison.OrdinalIgnoreCase)
+
+Actual:
+	foo = ""foo""")]
 		public void TestStaticStringMethod()
 		{
 			var foo = "foo";
 
-#pragma warning disable CA1309 // Use ordinal string comparison
-			AssertThrowsAssertion(() => string.Equals("bar", foo, StringComparison.InvariantCultureIgnoreCase), @"Expected:
-	string.Equals(""bar"", foo, StringComparison.InvariantCultureIgnoreCase)
-
-Actual:
-	foo = ""foo""");
-#pragma warning restore CA1309 // Use ordinal string comparison
+			AssertEx.Assert(() => string.Equals("bar", foo, StringComparison.OrdinalIgnoreCase));
 		}
 
-		[Test, Explicit("TODO: Fix this")]
+		[Test, Explicit("TODO: Fix this"), ExpectedMessage(@"Expected:
+	((FooEnum) foo).ToString() == ""Bar""
+
+Actual:
+	((FooEnum) foo).ToString() = ""Foo""")]
 		public void TestEnumCast()
 		{
 			var foo = 1;
 
-			AssertThrowsAssertion(() => ((FooEnum) foo).ToString() == "Bar", @"Expected:
-	((FooEnum) foo).ToString() == ""Bar""
-
-Actual:
-	((FooEnum) foo).ToString() = ""Foo""");
+			AssertEx.Assert(() => ((FooEnum) foo).ToString() == "Bar");
 		}
 
-		[Test, Explicit("TODO: Fix this")]
-		public void TestStaticMemberOfBaseClass()
-		{
-			AssertThrowsAssertion(() => new FooImpl().DoFalseAssert(), @"Expected:
+		[Test, Explicit("TODO: Fix this"), ExpectedMessage(@"Expected:
 	Bar == ""Buzz""
 
 Actual:
-	Bar = ""Baz""", expectStackTrace: false);
+	Bar = ""Baz""")]
+		public void TestStaticMemberOfBaseClass()
+		{
+			new FooImpl().DoFalseAssert();
 		}
 
-		[Test]
-		public void AssertMultipleNoop()
-		{
-			var assertion = Assert.Throws<MultipleAssertException>(() =>
-			{
-				Assert.Multiple(() =>
-				{
-					string foo = null;
-					AssertEx.Select(() => foo)
-						.Assert(a => a.Length == 5);
-				});
-			});
-
-			AreMostlyEqual(@"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	foo
 
 Actual:
-	foo = null",
-				assertion.Message);
+	foo = null")]
+		public void AssertMultipleNoop()
+		{
+			Assert.Multiple(() =>
+			{
+				string foo = null;
+				AssertEx.Select(() => foo)
+					.Assert(a => a.Length == 5);
+			});
 		}
 
-		[Test]
-		public void AssertMultiple()
-		{
-			var assertion = Assert.Throws<MultipleAssertException>(() =>
-			{
-				Assert.Multiple(() =>
-				{
-					var foo = "bar";
-					AssertEx.Select(() => foo)
-						.Assert(a => a.Length == 5)
-						.Assert(a => a.Length == 4);
-				});
-			});
-
-			AreMostlyEqual(@"Multiple failures or warnings in test:
+		[Test, ExpectedMessage(@"Multiple failures or warnings in test:
   1) Expected:
 	foo.Length == 5
 
@@ -686,41 +660,32 @@ Actual:
 
 Actual:
 	foo.Length = 3
-",
-				assertion.Message);
-		}
-
-		private static void AssertThrowsAssertionWithStackTrace<T>(Expression<Func<T>> expression, string expectedMessage)
-			where T : class
-			=> AssertThrowsAssertion(() => AssertEx.Select(expression), expectedMessage, expectStackTrace: true);
-
-		private static void AssertThrowsAssertion(Expression<Func<bool>> expression, string expectedMessage)
-			=> AssertThrowsAssertion(() => AssertEx.Assert(expression), expectedMessage, expectStackTrace: false);
-
-		private static void AssertThrowsAssertionWithStackTrace(Expression<Func<bool>> expression, string expectedMessage)
-			=> AssertThrowsAssertion(() => AssertEx.Assert(expression), expectedMessage, expectStackTrace: true);
-
-		private static void AssertThrowsAssertion(TestDelegate code, string expectedMessage, bool expectStackTrace)
+")]
+		public void AssertMultiple()
 		{
-			var assertion = Assert.Throws<AssertionException>(code);
-
-			if (expectStackTrace)
+			Assert.Multiple(() =>
 			{
-				Assert.AreEqual(expectedMessage, assertion.Message[..expectedMessage.Length], assertion.Message);
-				Assert.AreNotEqual(expectedMessage.Length, assertion.Message.Length, "Expected stack trace, got: " + expectedMessage);
-				foreach (var line in assertion.Message[expectedMessage.Length..].Split('\n').Select(line => line.Trim()).Where(line => line.Length > 0))
-					Assert.AreEqual("at ", line[..3], line);
-			}
-			else
-			{
-				Assert.AreEqual(expectedMessage, assertion.Message, assertion.Message);
-			}
+				var foo = "bar";
+				AssertEx.Select(() => foo)
+					.Assert(a => a.Length == 5)
+					.Assert(a => a.Length == 4);
+			});
 		}
 
-		private static void AreMostlyEqual(string expected, string actual) => Assert.AreEqual(
-			expected?.Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase),
-			actual?.Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase));
+		[Test, ExpectedMessage(@"Expected:
+	actual[i] == 1
 
+Actual:
+	actual = [1, 2, 3]
+	i = 1")]
+		public void TestVariableIndex()
+		{
+			var actual = new[] { 1, 2, 3 };
+
+			for (var i = 0; i < actual.Length; i++)
+				AssertEx.Assert(() => actual[i] == 1);
+		}
+		
 		private sealed class FooDto
 		{
 			public string Id { get; set; }
