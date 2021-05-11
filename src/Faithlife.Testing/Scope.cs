@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 
 namespace Faithlife.Testing
 {
 	internal sealed class Scope : IDisposable
 	{
-		public static Scope Create(Action dispose) => new(dispose);
+		public static IDisposable NoOp { get; } = new Scope(() => { });
+		public static IDisposable Create(Action dispose) => new Scope(dispose);
 
 		private Scope(Action dispose)
 		{

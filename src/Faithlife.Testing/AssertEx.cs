@@ -131,10 +131,9 @@ namespace Faithlife.Testing
 			foreach (var pair in context)
 				s_contextStack.Value = s_contextStack.Value.Push(pair);
 
-			if (originalStack == s_contextStack.Value)
-				throw new ArgumentException("Must provide more context! Sequence contains no elements.", nameof(context));
-
-			return Scope.Create(() => s_contextStack.Value = originalStack);
+			return originalStack != s_contextStack.Value
+				? Scope.Create(() => s_contextStack.Value = originalStack)
+				: Scope.NoOp;
 		}
 
 		/// <summary>
@@ -313,10 +312,9 @@ namespace Faithlife.Testing
 				foreach (var pair in context)
 					newContext = newContext.Push(pair);
 
-				if (newContext == m_context)
-					throw new ArgumentException("Must provide more context! Sequence contains no elements.", nameof(context));
-
-				return new Builder<T1>(Value, m_valueExpression, newContext);
+				return newContext != m_context
+					? new Builder<T1>(Value, m_valueExpression, newContext)
+					: this;
 			}
 
 			/// <summary>
