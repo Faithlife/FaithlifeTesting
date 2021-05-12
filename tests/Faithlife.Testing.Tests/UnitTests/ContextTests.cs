@@ -79,10 +79,10 @@ namespace Faithlife.Testing.Tests.UnitTests
 		[Test]
 		public void BuilderNoContext()
 		{
-			var builder = AssertEx.Select(new object())
+			var builder = AssertEx.HasValue(new object())
 				.Context(Enumerable.Empty<(string, object)>());
 
-			var assertion = Assert.Throws<AssertionException>(() => builder.Assert(o => false));
+			var assertion = Assert.Throws<AssertionException>(() => builder.IsTrue(o => false));
 			new ExpectedMessageAttribute(@"Expected:
 	false", expectStackTrace: false)
 				.AssertMessageIsExpected(assertion.Message);
@@ -106,7 +106,7 @@ Actual:
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertEx.Assert(() => value == 2);
+			AssertEx.IsTrue(() => value == 2);
 		}
 
 		[Test]
@@ -158,7 +158,7 @@ Actual:
 
 		private static void AssertHasNoContext()
 		{
-			var assertion = Assert.Throws<AssertionException>(() => AssertEx.Assert(() => false));
+			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
 			var expectedMessage = @"Expected:
 	false";
 			Assert.AreEqual(expectedMessage, assertion.Message, assertion.Message);
@@ -166,7 +166,7 @@ Actual:
 
 		private static void AssertHasContext(string expectedContext)
 		{
-			var assertion = Assert.Throws<AssertionException>(() => AssertEx.Assert(() => false));
+			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
 			new ExpectedMessageAttribute(@$"Expected:
 	false
 
@@ -175,12 +175,12 @@ Context:
 				.AssertMessageIsExpected(assertion.Message);
 		}
 
-		private static void AssertHasContext(Func<AssertEx.Builder<object>, AssertEx.Builder<object>> addContext, string expectedContext)
+		private static void AssertHasContext(Func<Assertable<object>, Assertable<object>> addContext, string expectedContext)
 		{
-			var builder = AssertEx.Select(new object());
+			var builder = AssertEx.HasValue(new object());
 			builder = addContext(builder);
 
-			var assertion = Assert.Throws<AssertionException>(() => builder.Assert(o => false));
+			var assertion = Assert.Throws<AssertionException>(() => builder.IsTrue(o => false));
 			new ExpectedMessageAttribute(@$"Expected:
 	false
 

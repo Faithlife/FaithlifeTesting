@@ -51,7 +51,7 @@ namespace Faithlife.Testing.RabbitMq
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
-		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
+		public LazyTask<Assertable<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
 		{
 			var awaiter = new Awaiter(predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression)));
 
@@ -63,7 +63,7 @@ namespace Faithlife.Testing.RabbitMq
 				m_awaiters.Add(awaiter);
 			}
 
-			return new LazyTask<AssertEx.Builder<TMessage>>(async () =>
+			return new LazyTask<Assertable<TMessage>>(async () =>
 			{
 				// LazyTask ensures that the timeout begins ticking once we start awaiting, not when first registering the awaiter.
 				// delayMilliseconds is not a `const` so that `AssertEx` can capture its name.
@@ -84,13 +84,13 @@ namespace Faithlife.Testing.RabbitMq
 						var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
 						var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, predicateExpression);
 
-						AssertEx.Select(() => messages)
-							.Select(Expression.Lambda<Func<IReadOnlyCollection<TMessage>, TMessage>>(body, param));
+						AssertEx.HasValue(() => messages)
+							.HasValue(Expression.Lambda<Func<IReadOnlyCollection<TMessage>, TMessage>>(body, param));
 					}
 				}
 
 				var message = result.Result;
-				return AssertEx.Select(() => message);
+				return AssertEx.HasValue(() => message);
 			});
 		}
 

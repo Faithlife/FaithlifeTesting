@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests
@@ -12,35 +11,35 @@ namespace Faithlife.Testing.Tests.UnitTests
 		[Test]
 		public void TestIsTrueConstant()
 		{
-			AssertEx.Assert(() => true);
+			AssertEx.IsTrue(() => true);
 		}
 
 		[Test]
 		public void TestIsTrueCapturedConstant()
 		{
 			var value = true;
-			AssertEx.Assert(() => value);
+			AssertEx.IsTrue(() => value);
 		}
 
 		[Test]
 		public void TestIsTrueEquals()
 		{
 			var value = 1;
-			AssertEx.Assert(() => value == 1);
+			AssertEx.IsTrue(() => value == 1);
 		}
 
 		[Test]
 		public void TestIsTrueAny()
 		{
 			var value = new[] { 1 };
-			AssertEx.Assert(() => value.Any());
+			AssertEx.IsTrue(() => value.Any());
 		}
 
 		[Test]
 		public void TestIsTrueNestedPredicate()
 		{
 			var value = new[] { 1 };
-			AssertEx.Assert(() => value.Any(x => x == 1));
+			AssertEx.IsTrue(() => value.Any(x => x == 1));
 		}
 
 		[Test]
@@ -48,7 +47,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		{
 			var a = 1;
 			var b = 3;
-			AssertEx.Assert(() => a == 1 && b == 3);
+			AssertEx.IsTrue(() => a == 1 && b == 3);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -56,7 +55,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public void TestFalseConstant()
 		{
 			// This is silly, but not worth preventing.
-			AssertEx.Assert(() => false);
+			AssertEx.IsTrue(() => false);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -67,7 +66,7 @@ Actual:
 		public void TestBooleanVariable()
 		{
 			var value = false;
-			AssertEx.Assert(() => value);
+			AssertEx.IsTrue(() => value);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -78,7 +77,7 @@ Actual:
 		public void TestVariableEquals()
 		{
 			var value = 1;
-			AssertEx.Assert(() => value == 2);
+			AssertEx.IsTrue(() => value == 2);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -89,7 +88,7 @@ Actual:
 		public void TestNullableConvert()
 		{
 			int? value = 1;
-			AssertEx.Assert(() => value == 2);
+			AssertEx.IsTrue(() => value == 2);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -100,7 +99,7 @@ Actual:
 		public void TestNot()
 		{
 			var value = true;
-			AssertEx.Assert(() => !value);
+			AssertEx.IsTrue(() => !value);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -112,7 +111,7 @@ Actual:
 		public void TestMember()
 		{
 			var value = 2;
-			AssertEx.Assert(() => value == m_member);
+			AssertEx.IsTrue(() => value == m_member);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -124,7 +123,7 @@ Actual:
 		public void TestStaticMember()
 		{
 			var value = 2;
-			AssertEx.Assert(() => value == s_member);
+			AssertEx.IsTrue(() => value == s_member);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -135,7 +134,7 @@ Actual:
 		public void TestConstant()
 		{
 			var value = 2;
-			AssertEx.Assert(() => value == c_member);
+			AssertEx.IsTrue(() => value == c_member);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -146,7 +145,7 @@ Actual:
 		public void TestAny()
 		{
 			var value = Array.Empty<int>();
-			AssertEx.Assert(() => value.Any());
+			AssertEx.IsTrue(() => value.Any());
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -160,7 +159,7 @@ System.InvalidOperationException: Sequence contains no elements",
 		public void TestSingle()
 		{
 			var value = Array.Empty<FooDto>();
-			AssertEx.Select(() => value.Single());
+			AssertEx.HasValue(() => value.Single());
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -171,7 +170,7 @@ Actual:
 		public void TestArrayIndex()
 		{
 			var value = new[] { 2 };
-			AssertEx.Assert(() => value[0] == 1);
+			AssertEx.IsTrue(() => value[0] == 1);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -182,7 +181,7 @@ Actual:
 		public void TestListIndex()
 		{
 			var value = new List<int> { 2 };
-			AssertEx.Assert(() => value[0] == 1);
+			AssertEx.IsTrue(() => value[0] == 1);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -196,7 +195,7 @@ System.Collections.Generic.KeyNotFoundException: The given key 'foo' was not pre
 		public void TestDictionaryIndex()
 		{
 			var value = new Dictionary<string, int>();
-			AssertEx.Assert(() => value["foo"] == 1);
+			AssertEx.IsTrue(() => value["foo"] == 1);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -207,7 +206,7 @@ Actual:
 		public void TestNestedPredicate()
 		{
 			var value = new[] { 1 };
-			AssertEx.Assert(() => value.Any(x => x == 2));
+			AssertEx.IsTrue(() => value.Any(x => x == 2));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -220,7 +219,7 @@ System.ArgumentNullException: Value cannot be null. (Parameter 'source')", expec
 		public void TestLinqMethodNull()
 		{
 			int[] value = null;
-			AssertEx.Assert(() => value.Any());
+			AssertEx.IsTrue(() => value.Any());
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -233,7 +232,7 @@ Actual:
 		{
 			var a = 2;
 			var b = 4;
-			AssertEx.Assert(() => a == 1 || b == 3);
+			AssertEx.IsTrue(() => a == 1 || b == 3);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -247,7 +246,7 @@ Actual:
 		{
 			var a = 2;
 			var b = 4;
-			AssertEx.Assert(() => a == 1 && b == 3);
+			AssertEx.IsTrue(() => a == 1 && b == 3);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -259,7 +258,7 @@ Actual:
 		{
 			var a = 1;
 			var b = 4;
-			AssertEx.Assert(() => a == 1 && b == 3);
+			AssertEx.IsTrue(() => a == 1 && b == 3);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -274,7 +273,7 @@ Actual:
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertEx.Assert(() => (a + b) * c == 0);
+			AssertEx.IsTrue(() => (a + b) * c == 0);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -289,7 +288,7 @@ Actual:
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertEx.Assert(() => a - (b - c) == -8);
+			AssertEx.IsTrue(() => a - (b - c) == -8);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -304,7 +303,7 @@ Actual:
 			var a = 1;
 			var b = 4;
 			var c = 5;
-			AssertEx.Assert(() => a - (b + c) == 2);
+			AssertEx.IsTrue(() => a - (b + c) == 2);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -324,7 +323,7 @@ Actual:
 			var b = Array.Empty<string>();
 			var c = Array.Empty<string>();
 			var d = Array.Empty<string>();
-			AssertEx.Assert(() => a.Any(x => x.Length == 5) && b.Any(x => x.Length == 5) && c.Any(x => x.Length == 5) && d.Any(x => x.Length == 5));
+			AssertEx.IsTrue(() => a.Any(x => x.Length == 5) && b.Any(x => x.Length == 5) && c.Any(x => x.Length == 5) && d.Any(x => x.Length == 5));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -335,7 +334,7 @@ Actual:
 		public void TestDtoProperty()
 		{
 			var foo = new FooDto { Id = "1", Bar = "Fizz" };
-			AssertEx.Assert(() => foo.Bar == "Buzz");
+			AssertEx.IsTrue(() => foo.Bar == "Buzz");
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -350,7 +349,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			FooDto foo = null;
 
-			AssertEx.Assert(() => foo.Bar == "Buzz");
+			AssertEx.IsTrue(() => foo.Bar == "Buzz");
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -362,7 +361,7 @@ Actual:
 		{
 			FooDto foo = null;
 
-			AssertEx.Assert(() => foo != null && foo.Bar == "Buzz");
+			AssertEx.IsTrue(() => foo != null && foo.Bar == "Buzz");
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -373,7 +372,7 @@ Actual:
 		public void TestSelect()
 		{
 			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" } };
-			AssertEx.Assert(() => foos.Select(f => f.Baz).Contains(2));
+			AssertEx.IsTrue(() => foos.Select(f => f.Baz).Contains(2));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -386,7 +385,7 @@ Actual:
 		{
 			var foos = new[] { new FooDto { Baz = 1, Bar = "Buzz" } };
 			var value = 1;
-			AssertEx.Assert(() => foos.Select(f => f.Baz + value).Contains(1));
+			AssertEx.IsTrue(() => foos.Select(f => f.Baz + value).Contains(1));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -400,7 +399,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			var foos = new[] { null, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertEx.Assert(() => foos.Any(f => f.Bar.Length == 4));
+			AssertEx.IsTrue(() => foos.Any(f => f.Bar.Length == 4));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -414,7 +413,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
 
-			AssertEx.Assert(() => foos.Any(f => f.Bar.Length == 4));
+			AssertEx.IsTrue(() => foos.Any(f => f.Bar.Length == 4));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -425,7 +424,7 @@ Actual:
 		public void TestAll()
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
-			AssertEx.Assert(() => foos.All(f => f.Baz == 1));
+			AssertEx.IsTrue(() => foos.All(f => f.Baz == 1));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -437,7 +436,7 @@ Actual:
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
 			// ReSharper disable once SimplifyLinqExpressionUseAll
-			AssertEx.Assert(() => !foos.Any(f => f.Baz == 2));
+			AssertEx.IsTrue(() => !foos.Any(f => f.Baz == 2));
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -451,7 +450,7 @@ Actual:
 		public void TestLargeObjectFormatting()
 		{
 			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 } };
-			AssertEx.Assert(() => bar == null);
+			AssertEx.IsTrue(() => bar == null);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -466,7 +465,7 @@ Actual:
 		public void TestLargeObjectWithSmallArrayFormatting()
 		{
 			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 }, Ints = new[] { 1, 2, 3 } };
-			AssertEx.Assert(() => bar == null);
+			AssertEx.IsTrue(() => bar == null);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -507,7 +506,7 @@ Actual:
 		public void TestLargeObjectWithLargeArrayFormatting()
 		{
 			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 } };
-			AssertEx.Assert(() => bar == null);
+			AssertEx.IsTrue(() => bar == null);
 		}
 
 		[Test, Explicit("TODO: Fix this"), ExpectedMessage(@"Expected:
@@ -519,7 +518,7 @@ Actual:
 		{
 			var foo = "foo";
 
-			AssertEx.Assert(() => string.Equals("bar", foo, StringComparison.OrdinalIgnoreCase));
+			AssertEx.IsTrue(() => string.Equals("bar", foo, StringComparison.OrdinalIgnoreCase));
 		}
 
 		[Test, Explicit("TODO: Fix this"), ExpectedMessage(@"Expected:
@@ -531,7 +530,7 @@ Actual:
 		{
 			var foo = 1;
 
-			AssertEx.Assert(() => ((FooEnum) foo).ToString() == "Bar");
+			AssertEx.IsTrue(() => ((FooEnum) foo).ToString() == "Bar");
 		}
 
 		[Test, Explicit("TODO: Fix this"), ExpectedMessage(@"Expected:
@@ -554,8 +553,8 @@ Actual:
 			Assert.Multiple(() =>
 			{
 				string foo = null;
-				AssertEx.Select(() => foo)
-					.Assert(a => a.Length == 5);
+				AssertEx.HasValue(() => foo)
+					.IsTrue(a => a.Length == 5);
 			});
 		}
 
@@ -576,9 +575,9 @@ Actual:
 			Assert.Multiple(() =>
 			{
 				var foo = "bar";
-				AssertEx.Select(() => foo)
-					.Assert(a => a.Length == 5)
-					.Assert(a => a.Length == 4);
+				AssertEx.HasValue(() => foo)
+					.IsTrue(a => a.Length == 5)
+					.IsTrue(a => a.Length == 4);
 			});
 		}
 
@@ -593,7 +592,7 @@ Actual:
 			var actual = new[] { 1, 2, 3 };
 
 			for (var i = 0; i < actual.Length; i++)
-				AssertEx.Assert(() => actual[i] == 1);
+				AssertEx.IsTrue(() => actual[i] == 1);
 		}
 		
 		private sealed class FooDto
@@ -621,7 +620,7 @@ Actual:
 			public void DoFalseAssert()
 #pragma warning restore CA1822 // Mark members as static
 			{
-				AssertEx.Assert(() => Bar == "Buzz");
+				AssertEx.IsTrue(() => Bar == "Buzz");
 			}
 		}
 
