@@ -116,6 +116,30 @@ namespace Faithlife.Testing
 		}
 
 		/// <summary>
+		/// Retries <paramref name="action"/> until all assertions chained after this method pass.
+		/// </summary>
+		public static WaitUntilAssertable<T> WaitUntil<T>(Func<T> action)
+			where T : class
+		{
+			if (action == null)
+				throw new ArgumentNullException(nameof(action));
+
+			return new WaitUntilAssertable<T>(() => Task.FromResult(HasValue(action())));
+		}
+
+		/// <summary>
+		/// Retries <paramref name="actionAsync"/> until all assertions chained after this method pass.
+		/// </summary>
+		public static WaitUntilAssertable<T> WaitUntil<T>(Func<Task<T>> actionAsync)
+			where T : class
+		{
+			if (actionAsync == null)
+				throw new ArgumentNullException(nameof(actionAsync));
+
+			return new WaitUntilAssertable<T>(async () => HasValue(await actionAsync()));
+		}
+
+		/// <summary>
 		/// Adds informational context to all assertions made within the `IDisposable` scope.
 		/// </summary>
 		public static IDisposable Context(string name, object value) => Context((name, value));

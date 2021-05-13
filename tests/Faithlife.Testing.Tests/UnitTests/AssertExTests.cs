@@ -594,7 +594,21 @@ Actual:
 			for (var i = 0; i < actual.Length; i++)
 				AssertEx.IsTrue(() => actual[i] == 1);
 		}
-		
+
+		[Test]
+		public void TestReuseOverCapturedVariable()
+		{
+			var fooBar = "foo";
+
+			var assertion = AssertEx.HasValue(() => fooBar)
+				.IsTrue(a => a == "foo");
+
+			// NOTE: the `.IsTrue(a => a == "foo")` expression above is **not** re-evaluated.
+			fooBar = "bar";
+
+			assertion.IsTrue(a => a == "bar");
+		}
+
 		private sealed class FooDto
 		{
 			public string Id { get; set; }

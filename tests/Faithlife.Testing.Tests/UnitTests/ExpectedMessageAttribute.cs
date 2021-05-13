@@ -58,7 +58,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 
 			public override TestResult Execute(TestExecutionContext context)
 			{
-				string message;
+				Exception actual;
 				try
 				{
 					context.CurrentResult = innerCommand.Execute(context);
@@ -67,18 +67,21 @@ namespace Faithlife.Testing.Tests.UnitTests
 				}
 				catch (NUnitException ex) when (ex.InnerException is AssertionException ae)
 				{
-					message = ae.Message;
+					actual = ae;
 				}
 				catch (NUnitException ex) when (ex.InnerException is MultipleAssertException mae)
 				{
-					message = mae.Message;
+					actual = mae;
 				}
-
-				context.CurrentResult = context.CurrentTest.MakeTestResult();
+				catch (Exception e) when (e is AssertionException or MultipleAssertException)
+				{
+					actual = e;
+				}
 
 				try
 				{
-					m_onAssertionFailure(message);
+					m_onAssertionFailure(actual.Message);
+					context.CurrentResult = context.CurrentTest.MakeTestResult();
 					context.CurrentResult.SetResult(ResultState.Success);
 				}
 				catch (AssertionException ex)
