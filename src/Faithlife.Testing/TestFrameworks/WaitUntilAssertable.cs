@@ -42,9 +42,7 @@ namespace Faithlife.Testing.TestFrameworks
 			if (mapExpression == null)
 				throw new ArgumentNullException(nameof(mapExpression));
 
-			return new WaitUntilAssertable<TResult>(
-				async () => (await m_getAssertable()).HasValue(mapExpression),
-				m_timeout);
+			return Apply(a => a.HasValue(mapExpression));
 		}
 
 		/// <summary>
@@ -68,9 +66,7 @@ namespace Faithlife.Testing.TestFrameworks
 			if (predicateExpression == null)
 				throw new ArgumentNullException(nameof(predicateExpression));
 
-			return new WaitUntilAssertable<T>(
-				async () => (await m_getAssertable()).IsTrue(predicateExpression),
-				m_timeout);
+			return Apply(a => a.IsTrue(predicateExpression));
 		}
 
 		/// <summary>
@@ -82,9 +78,7 @@ namespace Faithlife.Testing.TestFrameworks
 			if (assertionExpression == null)
 				throw new ArgumentNullException(nameof(assertionExpression));
 
-			return new WaitUntilAssertable<T>(
-				async () => (await m_getAssertable()).DoesNotThrow(assertionExpression),
-				m_timeout);
+			return Apply(a => a.DoesNotThrow(assertionExpression));
 		}
 
 		/// <summary>
@@ -120,8 +114,20 @@ namespace Faithlife.Testing.TestFrameworks
 			if (context == null)
 				throw new ArgumentNullException(nameof(context));
 
-			return new WaitUntilAssertable<T>(
-				async () => (await m_getAssertable()).Context(context),
+			return Apply(a => a.Context(context));
+		}
+
+		/// <summary>
+		/// Applies a <paramref name="transform"/> to the assertion we will wait for.
+		/// </summary>
+		public WaitUntilAssertable<TResult> Apply<TResult>(Func<Assertable<T>, Assertable<TResult>> transform)
+			where TResult : class
+		{
+			if (transform == null)
+				throw new ArgumentNullException(nameof(transform));
+
+			return new WaitUntilAssertable<TResult>(
+				async () => transform(await m_getAssertable()),
 				m_timeout);
 		}
 
