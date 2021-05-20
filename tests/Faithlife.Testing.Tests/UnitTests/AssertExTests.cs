@@ -609,11 +609,13 @@ Actual:
 		{
 			var foo = "foo";
 
+#pragma warning disable CA1309 // Use ordinal string comparison
 			AssertThrowsAssertion(() => string.Equals("bar", foo, StringComparison.InvariantCultureIgnoreCase), @"Expected:
 	string.Equals(""bar"", foo, StringComparison.InvariantCultureIgnoreCase)
 
 Actual:
 	foo = ""foo""");
+#pragma warning restore CA1309 // Use ordinal string comparison
 		}
 
 		[Test, Explicit("TODO: Fix this")]

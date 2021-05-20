@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-public static class NugetPackages
+internal static class NugetPackages
 {
 	public static readonly IReadOnlyList<string> ProjectsToPublish = new[]
 	{

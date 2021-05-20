@@ -1,24 +1,21 @@
 using System;
 using Faithlife.Build;
 
-internal static class Build
+return BuildRunner.Execute(args, build =>
 {
-	public static int Main(string[] args) => BuildRunner.Execute(args, build =>
-	{
-		build.AddDotNetTargets(
-			new DotNetBuildSettings
+	build.AddDotNetTargets(
+		new DotNetBuildSettings
+		{
+			NuGetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY"),
+			DocsSettings = new DotNetDocsSettings
 			{
-				NuGetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY"),
-				DocsSettings = new DotNetDocsSettings
-				{
-					GitLogin = new GitLoginInfo("faithlifebuildbot", Environment.GetEnvironmentVariable("BUILD_BOT_PASSWORD") ?? ""),
-					GitAuthor = new GitAuthorInfo("Faithlife Build Bot", "faithlifebuildbot@users.noreply.github.com"),
-					SourceCodeUrl = "https://github.com/Faithlife/FaithlifeTesting/tree/master/src",
-				},
-				PackageSettings = new DotNetPackageSettings
-				{
-					FindProjects = () => NugetPackages.ProjectsToPublish,
-				},
-			});
-	});
-}
+				GitLogin = new GitLoginInfo("faithlifebuildbot", Environment.GetEnvironmentVariable("BUILD_BOT_PASSWORD") ?? ""),
+				GitAuthor = new GitAuthorInfo("Faithlife Build Bot", "faithlifebuildbot@users.noreply.github.com"),
+				SourceCodeUrl = "https://github.com/Faithlife/FaithlifeTesting/tree/master/src",
+			},
+			PackageSettings = new DotNetPackageSettings
+			{
+				FindProjects = () => NugetPackages.ProjectsToPublish,
+			},
+		});
+});

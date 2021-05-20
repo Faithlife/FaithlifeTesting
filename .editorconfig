@@ -78,6 +78,7 @@ csharp_style_var_for_built_in_types = true : suggestion
 csharp_style_var_when_type_is_apparent = true : suggestion
 csharp_using_directive_placement = outside_namespace : warning
 dotnet_code_quality_unused_parameters = all : suggestion
+dotnet_code_quality.ca1711.allowed_suffixes = Ex
 dotnet_diagnostic.CA1031.severity = suggestion
 dotnet_diagnostic.CA1032.severity = suggestion
 dotnet_diagnostic.CA1054.severity = none
