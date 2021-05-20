@@ -577,7 +577,7 @@ namespace Faithlife.Testing
 					ExpressionType.OrAssign => (node.Type == typeof(bool) || node.Type == typeof(bool?) ? "||=" : "|=", assignmentOperators),
 					ExpressionType.ExclusiveOrAssign => ("^=", assignmentOperators),
 					ExpressionType.PowerAssign => ("**=", assignmentOperators),
-					_ => throw new InvalidOperationException($"Unexpected NodeType {node.NodeType} on BinaryExpression {node}")
+					_ => throw new InvalidOperationException($"Unexpected NodeType {node.NodeType} on BinaryExpression {node}"),
 				};
 
 				var associativity = precedence == assignmentOperators || node.NodeType == ExpressionType.Coalesce
