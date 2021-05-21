@@ -256,7 +256,12 @@ namespace Faithlife.Testing
 				}
 			}
 
-			return (default, GetDiagnosticMessage(valueExpression.Body, e, immediateContext));
+			return (default, GetDiagnosticMessage(
+				e != null
+					? valueExpression.Body
+					: Expression.NotEqual(valueExpression.Body, Expression.Constant(null, typeof(T))),
+				e,
+				immediateContext));
 		}
 
 		internal static string GetMessageIfFalse(Expression<Func<bool>> predicateExpression, IEnumerable<(string Name, object Value)> immediateContext)

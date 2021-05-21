@@ -33,12 +33,33 @@ namespace Faithlife.Testing.Tests.UnitTests
 				.HasValue(v => (int?) v.Length);
 		}
 
+		[Test, ExpectedMessage(@"Expected:
+	foo != null
+
+Actual:
+	foo = null")]
+		public void TestHasValueExpression()
+		{
+			string foo = null;
+			AssertEx.HasValue(() => foo);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
+	foo != null
+
+Actual:
+	foo = null")]
+		public void TestHasValueNamed()
+		{
+			AssertEx.HasValue<string>(null, "foo");
+		}
+
 		private static void NoOp()
 		{
 		}
 
 		[Test, ExpectedMessage(@"Expected:
-	foo
+	foo != null
 
 Actual:
 	foo = null")]
@@ -87,16 +108,6 @@ Actual:
 			fooBar = "bar";
 
 			assertion.IsTrue(a => a == "bar");
-		}
-
-		[Test, ExpectedMessage(@"Expected:
-	foo != null
-
-Actual:
-	foo = null")]
-		public void TestHasValue()
-		{
-			AssertEx.HasValue<string>(null, "foo");
 		}
 	}
 }

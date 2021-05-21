@@ -26,7 +26,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		}
 
 		[Test, ExpectedMessage(@"Expected:
-	response.OK
+	response.OK != null
 
 Actual:
 	response.OK = null

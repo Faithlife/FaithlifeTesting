@@ -59,15 +59,17 @@ namespace Faithlife.Testing.Tests.UnitTests
 		}
 
 		[Test, ExpectedMessage(@"Expected:
-	value
+	isFrobbable
 
 Actual:
-	value = false")]
+	isFrobbable = false")]
 		public void TestBooleanVariable()
 		{
-			// TODO: This might be clearer as "Expected: value == true"
-			var value = false;
-			AssertEx.IsTrue(() => value);
+			// I considered adding an implicit `isTrue == true` to the `Expected` message
+			// But that does not read better in all cases,
+			// and I think we can instead rely on good variable naming.
+			var isFrobbable = false;
+			AssertEx.IsTrue(() => isFrobbable);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
