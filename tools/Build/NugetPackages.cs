@@ -6,5 +6,6 @@ internal static class NugetPackages
 	{
 		@"src\Faithlife.Testing",
 		@"src\Faithlife.Testing.RabbitMq",
+		@"src\Faithlife.Testing.WebRequests",
 	};
 }

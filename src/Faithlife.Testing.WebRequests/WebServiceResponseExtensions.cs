@@ -49,7 +49,7 @@ namespace Faithlife.Testing
 			var assertable = AssertEx.HasValue(response, "response")
 				.Context(GetContext(exception, properties));
 
-			if (properties.Any(p => p.Name == statusCodeString && p.Value.GetType().IsClass))
+			if (properties.Any(p => p.IsContent && p.Value.GetType().IsClass))
 				assertable = assertable.WithExtrator(TryExtractStatusProperty);
 
 			return assertable;

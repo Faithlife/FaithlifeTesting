@@ -38,7 +38,7 @@ namespace Faithlife.Testing
 			if (IsNoOp)
 				return Assertable<TResult>.NoOp();
 
-			var (getValueExpression, message) = CoalesceWith(mapExpression);
+			var (getValueExpression, message) = CoalesceValueWith(mapExpression);
 
 			if (message == null)
 			{
@@ -65,7 +65,7 @@ namespace Faithlife.Testing
 			if (IsNoOp)
 				throw new InvalidOperationException("A previous assertion failed.");
 
-			var (getValueExpression, message) = CoalesceWith(mapExpression);
+			var (getValueExpression, message) = CoalesceValueWith(mapExpression);
 
 			if (message == null)
 			{
@@ -93,7 +93,7 @@ namespace Faithlife.Testing
 
 			if (!IsNoOp)
 			{
-				var (getValueExpression, message) = CoalesceWith(predicateExpression);
+				var (getValueExpression, message) = CoalesceValueWith(predicateExpression);
 
 				message ??= AssertEx.GetMessageIfFalse(getValueExpression, m_context);
 
@@ -115,7 +115,7 @@ namespace Faithlife.Testing
 
 			if (!IsNoOp)
 			{
-				var (actionExpression, message) = CoalesceWith(assertionExpression);
+				var (actionExpression, message) = CoalesceValueWith(assertionExpression);
 
 				message ??= AssertEx.GetMessageIfException(Expression.Lambda<Action>(actionExpression), m_context);
 
@@ -201,13 +201,13 @@ namespace Faithlife.Testing
 
 		private bool IsNoOp => Value == null;
 
-		private (Expression<Func<TResult>> GetValueExpression, string AssertMessage) CoalesceWith<TResult>(Expression<Func<T, TResult>> mapExpression)
+		private (Expression<Func<TResult>> GetValueExpression, string AssertMessage) CoalesceValueWith<TResult>(Expression<Func<T, TResult>> mapExpression)
 		{
-			var (resultExpression, message) = CoalesceWith((LambdaExpression) mapExpression);
+			var (resultExpression, message) = CoalesceValueWith((LambdaExpression) mapExpression);
 			return (Expression.Lambda<Func<TResult>>(resultExpression), message);
 		}
 
-		private (Expression ValueExpression, string AssertMessage) CoalesceWith(LambdaExpression mapExpression)
+		private (Expression ValueExpression, string AssertMessage) CoalesceValueWith(LambdaExpression mapExpression)
 		{
 			if (m_tryExtractValue != null && m_tryExtractValue(mapExpression, out var hasValueExpression, out var remainingExpression))
 			{

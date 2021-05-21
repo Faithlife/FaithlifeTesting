@@ -14,9 +14,9 @@ namespace Faithlife.Testing.TestFrameworks
 	public sealed class WaitUntilAssertable<T>
 		where T : class
 	{
-		internal WaitUntilAssertable(Func<Task<Assertable<T>>> getAssertible, TimeSpan? timeout = null)
+		internal WaitUntilAssertable(Func<Task<Assertable<T>>> getAssertable, TimeSpan? timeout = null)
 		{
-			m_getAssertable = getAssertible;
+			m_getAssertable = getAssertable;
 			m_timeout = timeout;
 		}
 
