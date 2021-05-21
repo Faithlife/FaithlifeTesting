@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Faithlife.Testing.TestFrameworks
 {
@@ -13,6 +14,12 @@ namespace Faithlife.Testing.TestFrameworks
 		/// <summary>Initializes a new instance of the <see cref="AssertionFailedException" /> class.</summary>
 		public AssertionFailedException(string message)
 			: base(message)
+		{
+		}
+
+		/// <summary>Initializes a new instance of the <see cref="AssertionFailedException" /> class.</summary>
+		private AssertionFailedException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
 		{
 		}
 	}
