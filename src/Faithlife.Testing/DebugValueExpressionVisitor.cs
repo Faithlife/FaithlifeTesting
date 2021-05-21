@@ -11,30 +11,33 @@ namespace Faithlife.Testing
 {
 	internal sealed class DebugValueExpressionVisitor : ExpressionStringBuilder
 	{
-		private const int c_andPrecedence = 9;
-
-		public static (string BodyString, IReadOnlyCollection<(string Name, object Value)> BodyValues) BodyToString(Expression body)
+		/// <summary>
+		/// Returns a string representation of the full expression <paramref name="expression"/>.
+		/// <paramref name="expression"/> must be compilable without arguments.
+		/// </summary>
+		public static (string ExpressionString, IReadOnlyCollection<(string Name, object Value)> DebugValues) GetFullString(Expression expression)
 		{
-			/*
-				 * TODO Cleanups
-				 *
-				 * AutoWebService URL, method, (headers, body?)
-				 * Single boolean member-access expressions append an `== true`?
-				 * ToString for ValueTuples
-				 * Pretty-printing values for LINQ .First, .Single, .Select, etc.
-				 *
-				 */
 			var vistor = new DebugValueExpressionVisitor();
-			vistor.Visit(body);
+			vistor.Visit(expression);
 			return (vistor.ToString(), vistor.DebugValues);
 		}
 
-		public static (string BodyString, IReadOnlyCollection<(string Name, object Value)> BodyValues) GetDiagnosticMessage(Expression body)
+		/// <summary>
+		/// If (a) <paramref name="expression"/> is of type `bool` and (b) it is `false`, attempts to return a string representation of *why* it is `false`.
+		/// Otherwise, behaves the same as <see cref="GetFullString"/>.
+		/// <paramref name="expression"/> must be compilable without arguments.
+		/// </summary>
+		public static (string ExpressionString, IReadOnlyCollection<(string Name, object Value)> DebugValues) GetDiagnosticString(Expression expression)
 		{
 			var vistor = new DebugValueExpressionVisitor();
-			vistor.VisitDiagnosticRoot(body);
+			vistor.VisitDiagnosticRoot(expression);
 			return (vistor.ToString(), vistor.DebugValues);
 		}
+
+		/// <summary>
+		/// Tags a value with a name for later display when debugging.
+		/// </summary>
+		public static Expression GetDebugExpresssion<T>(string name, T value) => new DebugValue<T> { Name = name, Value = value }.AsExpression();
 
 		private void VisitDiagnosticRoot(Expression body)
 		{
@@ -51,10 +54,10 @@ namespace Faithlife.Testing
 			while (stack.Any())
 			{
 				var current = stack.Pop();
-				if (current is BinaryExpression { NodeType: ExpressionType.AndAlso } be)
+				if (current is BinaryExpression { NodeType: ExpressionType.AndAlso } andAlso)
 				{
-					stack.Push(be.Right);
-					stack.Push(be.Left);
+					stack.Push(andAlso.Right);
+					stack.Push(andAlso.Left);
 				}
 				else
 				{
@@ -111,8 +114,8 @@ namespace Faithlife.Testing
 			{
 				// For `seq.All(a => [predicate])` and `!seq.Any(a => [predicate])`,
 				// output the values in the sequence that caused the All/Any to fail.
-				var (isNegated, mce) = branch is UnaryExpression { NodeType: ExpressionType.Not } ue
-					? (true, ue.Operand as MethodCallExpression)
+				var (isNegated, mce) = branch is UnaryExpression { NodeType: ExpressionType.Not } not
+					? (true, not.Operand as MethodCallExpression)
 					: (false, branch as MethodCallExpression);
 
 				if (mce != null
@@ -144,6 +147,7 @@ namespace Faithlife.Testing
 						if (isNegated)
 							Out("!");
 
+						// TODO: recursively call VisitDiagnosticRoot to only include the branches in `mce.Arguments[1]` which caused it to fail?
 						Out(expressionText);
 						Out(".");
 						Out(mce.Method.Name);
@@ -322,6 +326,14 @@ namespace Faithlife.Testing
 				addedToChain = false;
 				while (current is MemberExpression me)
 				{
+					if (TryGetDebugValue(me, out var valueName, out var value))
+					{
+						// Named values are referenced by name.
+						chain.Add((valueName, Expression.Constant(value)));
+						foundTerminator = true;
+						break;
+					}
+
 					if (me.Member is FieldInfo { IsPrivate: true, IsStatic: true } fi)
 					{
 						// Private static members need not be qualified
@@ -354,7 +366,7 @@ namespace Faithlife.Testing
 
 					for (var i = 1; i < mce.Arguments.Count; i++)
 					{
-						var (text, newDebugValues) = DebugValueExpressionVisitor.BodyToString(mce.Arguments[i]);
+						var (text, newDebugValues) = GetFullString(mce.Arguments[i]);
 
 						if (i != 1)
 							sb.Append(", ");
@@ -393,7 +405,9 @@ namespace Faithlife.Testing
 
 				try
 				{
-					var value = Expression.Lambda(chain[0].Expression).Compile().DynamicInvoke();
+					var value = chain[0].Expression is ConstantExpression ce
+						? ce.Value
+						: Expression.Lambda(chain[0].Expression).Compile().DynamicInvoke();
 
 					debugValues.Add(name, value);
 					return true;
@@ -416,17 +430,54 @@ namespace Faithlife.Testing
 			}
 		}
 
+		private static bool TryGetDebugValue(Expression e, out string name, out object value)
+		{
+			if (!(e is MemberExpression { Member: { Name: "Value", DeclaringType: { IsConstructedGenericType: true } } } me
+				&& me.Member.DeclaringType.GetGenericTypeDefinition() == typeof(DebugValue<>)
+				&& me.Expression is ConstantExpression { Value: IDebugValue debugValue }))
+			{
+				name = null;
+				value = null;
+				return false;
+			}
 
-		// Includes Enumerable methods that (subjectively)
-		// (a) are more about *transforming* an enumerable than making *assertions* about the content of the enumerable, and
-		// (b) only have one "primary" argument being transformed.
-		private static readonly HashSet<string> s_debugValueEnumerableMethods = new() { "Select", "Where", "SelectMany", "Take", "Skip", "TakeWhile", "SkipWhile", "OrderBy", "ThenBy", "OrderByDescending", "ThenByDescending", "Distinct", "Reverse", "AsEnumerable", "ToArray", "ToList", "ToDictionary", "ToLookup", "ToHashSet" };
+			(name, value) = debugValue;
+			return true;
+		}
+
+		private sealed class DebugValue<T> : IDebugValue
+		{
+			public string Name { get; set; }
+			public T Value { get; set; }
+
+			public void Deconstruct(out string name, out object value)
+			{
+				name = Name;
+				value = Value;
+			}
+
+			public Expression AsExpression() => Expression.MakeMemberAccess(Expression.Constant(this), s_getValue);
+
+			private static readonly MemberInfo s_getValue = typeof(DebugValue<T>).GetProperty("Value");
+		}
+
+		private interface IDebugValue
+		{
+			void Deconstruct(out string name, out object value);
+		}
 
 		private enum Associativity
 		{
 			Left,
 			Right,
 		}
+
+		private const int c_andPrecedence = 9;
+
+		// Includes Enumerable methods that (subjectively)
+		// (a) are more about *transforming* an enumerable than making *assertions* about the content of the enumerable, and
+		// (b) only have one "primary" argument being transformed.
+		private static readonly HashSet<string> s_debugValueEnumerableMethods = new() { "Select", "Where", "SelectMany", "Take", "Skip", "TakeWhile", "SkipWhile", "OrderBy", "ThenBy", "OrderByDescending", "ThenByDescending", "Distinct", "Reverse", "AsEnumerable", "ToArray", "ToList", "ToDictionary", "ToLookup", "ToHashSet" };
 
 		private readonly Dictionary<string, object> m_debugValues = new();
 	}

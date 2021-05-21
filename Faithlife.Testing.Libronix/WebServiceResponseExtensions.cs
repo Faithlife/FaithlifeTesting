@@ -3,187 +3,98 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Faithlife.Reflection;
 using Faithlife.Testing.TestFrameworks;
+using Faithlife.WebRequests;
 using Faithlife.WebRequests.Json;
 
-namespace Faithlife.Testing.WebRequests
+namespace Faithlife.Testing
 {
 	public static class WebServiceResponseExtensions
 	{
-		public static async Task<Assertable<TResponse>> AssertResponseIs<TResponse>(this Task<TResponse> webServiceResponse, Expression<Func<TResponse, bool>> predicateExpression)
-			where TResponse : AutoWebServiceResponse
-			=> (await webServiceResponse).AssertResponseIs(predicateExpression);
-		
-		public static WaitUntilAssertable<TResponse> AssertResponseIs<TResponse>(this WaitUntilAssertable<TResponse> webServiceResponse, Expression<Func<TResponse, bool>> predicateExpression)
-			where TResponse : AutoWebServiceResponse
-		{
-			if (webServiceResponse == null)
-				throw new ArgumentNullException(nameof(webServiceResponse));
-
-			return webServiceResponse.Apply(a => a.Value.AssertResponseIs(predicateExpression));
-		}
-
-		public static Assertable<TResponse> AssertResponseIs<TResponse>(this TResponse response, Expression<Func<TResponse, bool>> predicateExpression)
+		public static async Task<Assertable<TResponse>> AssertResponse<TResponse>(this Task<TResponse> response)
 			where TResponse : AutoWebServiceResponse
 		{
 			if (response == null)
 				throw new ArgumentNullException(nameof(response));
-			if (predicateExpression == null)
-				throw new ArgumentNullException(nameof(predicateExpression));
 
-			return AssertEx.HasValue(() => response)
-				.Context(GetContext(response))
-				.IsTrue(predicateExpression);
+			return (await response).AssertResponse();
 		}
 
-		public static async Task<Assertable<TStatus>> AssertResponseHas<TResponse, TStatus>(this Task<TResponse> webServiceResponse, Expression<Func<TResponse, TStatus>> getStatusProperty)
+		public static WaitUntilAssertable<TResponse> AssertResponse<TResponse>(this WaitUntilAssertable<TResponse> response)
 			where TResponse : AutoWebServiceResponse
-			where TStatus : class
-			=> (await webServiceResponse).AssertResponseHas(getStatusProperty);
-
-		public static WaitUntilAssertable<TStatus> AssertResponseHas<TResponse, TStatus>(this WaitUntilAssertable<TResponse> webServiceResponse, Expression<Func<TResponse, TStatus>> getStatusProperty)
-			where TResponse : AutoWebServiceResponse
-			where TStatus : class
 		{
-			if (webServiceResponse == null)
-				throw new ArgumentNullException(nameof(webServiceResponse));
+			if (response == null)
+				throw new ArgumentNullException(nameof(response));
 
-			return webServiceResponse.Apply(a => a.Value.AssertResponseHas(getStatusProperty));
+			return response.Apply(a => a.Value.AssertResponse());
 		}
 
-		public static Assertable<TStatus> AssertResponseHas<TResponse, TStatus>(this TResponse webServiceResponse, Expression<Func<TResponse, TStatus>> mapExpression)
-			where TResponse : AutoWebServiceResponse
-			where TStatus : class
-		{
-			if (webServiceResponse == null)
-				throw new ArgumentNullException(nameof(webServiceResponse));
-			if (mapExpression == null)
-				throw new ArgumentNullException(nameof(mapExpression));
-
-			var context = GetContext(webServiceResponse).ToList();
-
-			if (TryGetAssertableRequest(webServiceResponse, mapExpression, context, GenericParameterAttributes.ReferenceTypeConstraint, out var builder))
-				return (Assertable<TStatus>) builder;
-
-			return AssertResponse(webServiceResponse, context).HasValue(mapExpression);
-		}
-
-		public static async Task<TStatus> AssertResponseHas<TResponse, TStatus>(this Task<TResponse> webServiceResponse, Expression<Func<TResponse, TStatus?>> getStatusProperty)
-			where TResponse : AutoWebServiceResponse
-			where TStatus : struct
-			=> (await webServiceResponse).AssertResponseHas(getStatusProperty);
-
-		public static async Task<TStatus> AssertResponseHas<TResponse, TStatus>(this WaitUntilAssertable<TResponse> webServiceResponse, Expression<Func<TResponse, TStatus?>> getStatusProperty)
-			where TResponse : AutoWebServiceResponse
-			where TStatus : struct
-		{
-			if (webServiceResponse == null)
-				throw new ArgumentNullException(nameof(webServiceResponse));
-
-			return await webServiceResponse
-				.Apply(a => AssertEx.HasValue(a.Value).Context(GetContext(a.Value)))
-				.HasValue(getStatusProperty);
-		}
-
-		public static TStatus AssertResponseHas<TResponse, TStatus>(this TResponse webServiceResponse, Expression<Func<TResponse, TStatus?>> mapExpression)
-			where TResponse : AutoWebServiceResponse
-			where TStatus : struct
-		{
-			if (webServiceResponse == null)
-				throw new ArgumentNullException(nameof(webServiceResponse));
-			if (mapExpression == null)
-				throw new ArgumentNullException(nameof(mapExpression));
-
-			var context = GetContext(webServiceResponse).ToList();
-
-			if (TryGetAssertableRequest(webServiceResponse, mapExpression, context, GenericParameterAttributes.NotNullableValueTypeConstraint, out var builder))
-				return (TStatus) builder;
-
-			return AssertResponse(webServiceResponse, context).HasValue(mapExpression);
-		}
-
-		private static bool TryGetAssertableRequest<TResponse, TStatus>(
-			TResponse webServiceResponse,
-			Expression<Func<TResponse, TStatus>> mapExpression,
-			List<(string Name, object Value)> context,
-			GenericParameterAttributes genericParameterAttributes,
-			out object builder)
+		public static Assertable<TResponse> AssertResponse<TResponse>(this TResponse response)
 			where TResponse : AutoWebServiceResponse
 		{
-			builder = null;
+			if (response == null)
+				throw new ArgumentNullException(nameof(response));
 
-			if (mapExpression.Body is MemberExpression)
-				return false;
-
-			var visitor = new MemberReplacingExpressionVisitor(mapExpression.Parameters.Single());
-			var replacedBody = visitor.Visit(mapExpression.Body);
-
-			if (!visitor.TryGetSingleClassParameter(out var mi, out var pe))
-				return false;
-
-			var property = DtoInfo.GetInfo(typeof(TResponse)).TryGetProperty(mi.Name);
-			if (property == null)
-				return false;
-
-			var value = property.GetValue(webServiceResponse);
-			if (IsDefault(value))
-			{
-				AssertResponse(webServiceResponse, context)
-					.IsTrue(Expression.Lambda<Func<TResponse, bool>>(Expression.NotEqual(Expression.MakeMemberAccess(pe, mi), Expression.Constant(null)), pe));
-				return false;
-			}
-
-			var replacedLambda = Expression.Lambda(replacedBody, pe);
-
-			var select = typeof(Assertable<>).MakeGenericType(pe.Type)
-				.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-				.Single(selectMethod => selectMethod.Name == nameof(Assertable<object>.HasValue) && selectMethod.GetGenericArguments().Single().GenericParameterAttributes.HasFlag(genericParameterAttributes))
-				.MakeGenericMethod(typeof(TStatus));
-
-			try
-			{
-				var valueBuilder = s_response.MakeGenericMethod(pe.Type).Invoke(null, new[] { value, context });
-				builder = select.Invoke(valueBuilder, new object[] { replacedLambda });
-			}
-			catch (TargetInvocationException tie)
-			{
-				ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
-			}
-
-			return true;
-		}
-
-		private static Assertable<T> AssertResponse<T>(T response, IEnumerable<(string Name, object Value)> context)
-			where T : class
-		{
-			return AssertEx.HasValue(() => response).Context(context);
-		}
-
-		private static IEnumerable<(string Name, object Value)> GetContext<TResponse>(TResponse response)
-			where TResponse : AutoWebServiceResponse
-		{
 			var exception = response.CreateException();
 			var statusCodeString = exception.ResponseStatusCode?.ToString();
 
+			var properties = DtoInfo.GetInfo(typeof(TResponse))
+				.Properties
+				.Select(p => (p.Name, IsContent: IsProperty(p, statusCodeString), Value: p.GetValue(response)))
+				.Where(p => !IsDefault(p.Value))
+				.ToList();
+
+			var assertable = AssertEx.HasValue(response, "response")
+				.Context(GetContext(exception, properties));
+
+			if (properties.Any(p => p.Name == statusCodeString && p.Value.GetType().IsClass))
+				assertable = assertable.WithExtrator(TryExtractStatusProperty);
+
+			return assertable;
+
+			bool TryExtractStatusProperty(
+				LambdaExpression sourceExpression,
+				out LambdaExpression hasValueExpression,
+				out LambdaExpression remainingExpression)
+			{
+				hasValueExpression = null;
+				remainingExpression = null;
+
+				var sourceParameter = sourceExpression.Parameters.Single();
+				var visitor = new MemberReplacingExpressionVisitor(sourceParameter, "response");
+				var replacedBody = visitor.Visit(sourceExpression.Body);
+
+				if (!visitor.TryGetSingleClassParameter(out var memberInfo, out var responseParameter) || memberInfo.Name != statusCodeString)
+					return false;
+
+				hasValueExpression = Expression.Lambda(Expression.MakeMemberAccess(sourceParameter, memberInfo), sourceParameter);
+				remainingExpression = Expression.Lambda(replacedBody, responseParameter);
+
+				return true;
+			}
+		}
+
+		// Logic matches https://github.com/Faithlife/FaithlifeWebRequests/blob/5d04e85c62ae0ccea2ca7e45f5d40d650a7acd0b/src/Faithlife.WebRequests/Json/AutoWebServiceRequest.cs#L142
+		private static bool IsProperty(IDtoProperty property, string propertyName)
+			=> string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase);
+
+		private static IEnumerable<(string Name, object Value)> GetContext(WebServiceException exception, IEnumerable<(string Name, bool IsContent, object Value)> properties)
+		{
 			yield return ("request", $"{exception.RequestMethod} {exception.RequestUri.AbsoluteUri} (status {exception.ResponseStatusCode})");
 
-			var contextByIsContent = DtoInfo.GetInfo(typeof(TResponse))
-				.Properties
-				.Select(p => (p.Name, Value: p.GetValue(response)))
-				.Where(p => !IsDefault(p.Value))
-				.ToLookup(p => p.Name == statusCodeString);
+			var contextByIsContent = properties
+				.ToLookup(p => p.IsContent);
 
-			foreach (var (name, value) in contextByIsContent[false])
+			foreach (var (name, _, value) in contextByIsContent[false])
 				yield return ("response." + name, value);
 
 			if (contextByIsContent[true].All(p => p.Value is bool))
 			{
 				if (exception.ResponseContentPreview != null)
 				{
-					yield return ("response.Content", exception.ResponseContentPreview);
+					yield return ($"response.{exception.ResponseStatusCode}", exception.ResponseContentPreview);
 				}
 				else if (exception.Response?.Content != null)
 				{
@@ -197,7 +108,7 @@ namespace Faithlife.Testing.WebRequests
 						content = ex.ToString();
 					}
 
-					yield return ("response.Content", content);
+					yield return ($"response.{exception.ResponseStatusCode}", content);
 				}
 			}
 		}
@@ -213,10 +124,11 @@ namespace Faithlife.Testing.WebRequests
 
 		private sealed class MemberReplacingExpressionVisitor : ExpressionVisitor
 		{
-			public MemberReplacingExpressionVisitor(ParameterExpression parameterExpression)
+			public MemberReplacingExpressionVisitor(ParameterExpression parameterExpression, string parameterName)
 			{
 				m_newParameters = new Dictionary<MemberInfo, ParameterExpression>();
 				m_parameterExpression = parameterExpression;
+				m_parameterName = parameterName;
 			}
 
 			protected override Expression VisitMember(MemberExpression me)
@@ -227,7 +139,7 @@ namespace Faithlife.Testing.WebRequests
 				if (m_newParameters.TryGetValue(me.Member, out var pe))
 					return pe;
 
-				return m_newParameters[me.Member] = Expression.Parameter(me.Type, m_parameterExpression.Name);
+				return m_newParameters[me.Member] = Expression.Parameter(me.Type, m_parameterName);
 			}
 
 			public bool TryGetSingleClassParameter(out MemberInfo mi, out ParameterExpression pe)
@@ -240,8 +152,7 @@ namespace Faithlife.Testing.WebRequests
 			private readonly Dictionary<MemberInfo, ParameterExpression> m_newParameters;
 
 			private readonly ParameterExpression m_parameterExpression;
+			private readonly string m_parameterName;
 		}
-
-		private static readonly MethodInfo s_response = typeof(WebServiceResponseExtensions).GetMethod(nameof(AssertResponse), BindingFlags.NonPublic | BindingFlags.Static);
 	}
 }

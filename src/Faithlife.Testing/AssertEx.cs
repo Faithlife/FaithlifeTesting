@@ -36,20 +36,17 @@ namespace Faithlife.Testing
 		/// Starts a chain of assertions on <paramref name="value"/>.
 		/// Asserts that <paramref name="value"/> is not `null`.
 		/// </summary>
-		public static Assertable<T> HasValue<T>(T value)
+		public static Assertable<T> HasValue<T>(T value, string name = null)
 			where T : class
 		{
+			var parameter = DebugValueExpressionVisitor.GetDebugExpresssion(name ?? "value", value);
 			if (value == null)
 			{
-				TestFrameworkProvider.Fail(GetMessage(() => value));
-
-				static string GetMessage(Expression<Func<T>> valueExpression)
-					=> GetDiagnosticMessage(valueExpression.Body, null, s_emptyContext);
-
+				TestFrameworkProvider.Fail(GetDiagnosticMessage(Expression.NotEqual(parameter, Expression.Constant(null, typeof(T))), null, s_emptyContext));
 				return Assertable<T>.NoOp();
 			}
 
-			return new Assertable<T>(value, () => value, s_emptyContext);
+			return Assertable<T>.FromValueExpression(value, parameter);
 		}
 
 		/// <summary>
@@ -61,7 +58,7 @@ namespace Faithlife.Testing
 		{
 			if (valueExpression == null)
 				throw new ArgumentNullException(nameof(valueExpression));
-
+			
 			var (value, message) = GetValueOrNullMessage(valueExpression, s_emptyContext);
 
 			if (message != null)
@@ -70,7 +67,7 @@ namespace Faithlife.Testing
 				return Assertable<T>.NoOp();
 			}
 
-			return new Assertable<T>(value, valueExpression, s_emptyContext);
+			return Assertable<T>.FromValueExpression(value, valueExpression.Body);
 		}
 
 		/// <summary>
@@ -102,17 +99,11 @@ namespace Faithlife.Testing
 		{
 			if (assertionExpression == null)
 				throw new ArgumentNullException(nameof(assertionExpression));
-			
-			var assertFunc = assertionExpression.Compile();
 
-			try
-			{
-				assertFunc();
-			}
-			catch (Exception exception)
-			{
-				TestFrameworkProvider.Fail(GetDiagnosticMessage(assertionExpression.Body, exception, s_emptyContext));
-			}
+			var message = GetMessageIfException(assertionExpression, s_emptyContext);
+
+			if (message != null)
+				TestFrameworkProvider.Fail(message);
 		}
 
 		/// <summary>
@@ -231,7 +222,7 @@ namespace Faithlife.Testing
 		internal static IEnumerable<(string Name, object Value)> GetContextFromExpressions(IEnumerable<Expression<Func<object>>> contextExpressions) =>
 			contextExpressions.SelectMany(contextExpression =>
 			{
-				var (contextString, contextValues) = DebugValueExpressionVisitor.BodyToString(contextExpression.Body);
+				var (contextString, contextValues) = DebugValueExpressionVisitor.GetFullString(contextExpression.Body);
 
 				return contextValues.Append((contextString, (object) new Lazy<object>(() =>
 				{
@@ -289,23 +280,47 @@ namespace Faithlife.Testing
 			return GetDiagnosticMessage(predicateExpression.Body, e, immediateContext);
 		}
 
-		internal static string GetDiagnosticMessage(Expression body, Exception e, IEnumerable<(string Name, object Value)> immediateContext)
+		internal static string GetMessageIfException(Expression<Action> actionExpression, IEnumerable<(string Name, object Value)> immediateContext)
 		{
-			var (bodyString, bodyValues) = DebugValueExpressionVisitor.GetDiagnosticMessage(body);
+			var actionFunc = actionExpression.Compile();
+			Exception e;
 
+			using (TestFrameworkProvider.GetIsolatedContext())
+			{
+				try
+				{
+					actionFunc.Invoke();
+					return null;
+				}
+				catch (Exception exception)
+				{
+					e = exception;
+				}
+			}
+
+			return GetDiagnosticMessage(actionExpression.Body, e, immediateContext);
+		}
+
+		internal static string GetDiagnosticMessage(Expression body, Exception e, IEnumerable<(string Name, object Value)> immediateContextValues)
+		{
+			var (bodyString, bodyValues) = DebugValueExpressionVisitor.GetDiagnosticString(body);
+			return GetDiagnosticMessage(bodyString, bodyValues, e, immediateContextValues);
+		}
+
+		internal static string GetDiagnosticMessage(string expected, IReadOnlyCollection<(string Name, object Value)> actualValues, Exception e, IEnumerable<(string Name, object Value)> immediateContextValues)
+		{
 			var sb = new StringBuilder();
 			sb.AppendLineLf("Expected:");
 			sb.Append('\t');
-			sb.Append(bodyString);
-
-			var debugValues = bodyValues.ToList();
-			if (debugValues.Any())
+			sb.Append(expected);
+			
+			if (actualValues.Any())
 			{
 				sb.AppendLineLf();
 				sb.AppendLineLf();
 				sb.Append("Actual:");
 
-				foreach (var (name, value) in debugValues)
+				foreach (var (name, value) in actualValues)
 				{
 					sb.AppendLineLf();
 					sb.Append($"\t{name} = {ToString(value)}");
@@ -313,9 +328,9 @@ namespace Faithlife.Testing
 			}
 
 			var allContextValues = new List<(string Name, string Value)>();
-			foreach (var (name, value) in immediateContext.Concat(s_contextStack.Value ?? Enumerable.Empty<(string Name, object Value)>()))
+			foreach (var (name, value) in immediateContextValues.Concat(s_contextStack.Value ?? Enumerable.Empty<(string Name, object Value)>()))
 			{
-				if (debugValues.All(v => v.Name != name) && allContextValues.All(v => v.Name != name))
+				if (actualValues.All(v => v.Name != name) && allContextValues.All(v => v.Name != name))
 					allContextValues.Add((name, ToString(value)));
 			}
 

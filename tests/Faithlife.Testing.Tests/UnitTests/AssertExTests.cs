@@ -65,6 +65,7 @@ Actual:
 	value = false")]
 		public void TestBooleanVariable()
 		{
+			// TODO: This might be clearer as "Expected: value == true"
 			var value = false;
 			AssertEx.IsTrue(() => value);
 		}
@@ -544,44 +545,6 @@ Actual:
 		}
 
 		[Test, ExpectedMessage(@"Expected:
-	foo
-
-Actual:
-	foo = null")]
-		public void AssertMultipleNoop()
-		{
-			Assert.Multiple(() =>
-			{
-				string foo = null;
-				AssertEx.HasValue(() => foo)
-					.IsTrue(a => a.Length == 5);
-			});
-		}
-
-		[Test, ExpectedMessage(@"Multiple failures or warnings in test:
-  1) Expected:
-	foo.Length == 5
-
-Actual:
-	foo.Length = 3
-  2) Expected:
-	foo.Length == 4
-
-Actual:
-	foo.Length = 3
-")]
-		public void AssertMultiple()
-		{
-			Assert.Multiple(() =>
-			{
-				var foo = "bar";
-				AssertEx.HasValue(() => foo)
-					.IsTrue(a => a.Length == 5)
-					.IsTrue(a => a.Length == 4);
-			});
-		}
-
-		[Test, ExpectedMessage(@"Expected:
 	actual[i] == 1
 
 Actual:
@@ -595,19 +558,6 @@ Actual:
 				AssertEx.IsTrue(() => actual[i] == 1);
 		}
 
-		[Test]
-		public void TestReuseOverCapturedVariable()
-		{
-			var fooBar = "foo";
-
-			var assertion = AssertEx.HasValue(() => fooBar)
-				.IsTrue(a => a == "foo");
-
-			// NOTE: the `.IsTrue(a => a == "foo")` expression above is **not** re-evaluated.
-			fooBar = "bar";
-
-			assertion.IsTrue(a => a == "bar");
-		}
 
 		private sealed class FooDto
 		{

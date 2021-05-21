@@ -12,13 +12,17 @@ namespace Faithlife.Testing
 	public sealed class Assertable<T>
 		where T : class
 	{
-		internal static Assertable<T> NoOp() => new(null, null, ImmutableStack<(string Name, object Value)>.Empty);
+		internal static Assertable<T> NoOp() => FromValueExpression(null, null);
 
-		internal Assertable(T value, Expression<Func<T>> valueExpression, ImmutableStack<(string Name, object Value)> context)
+		internal static Assertable<T> FromValueExpression(T value, Expression valueExpression)
+			=> new(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty, null);
+
+		private Assertable(T value, Expression valueExpression, ImmutableStack<(string Name, object Value)> context, TryExtractValue tryExtractValue)
 		{
 			Value = value ;
 			m_valueExpression = valueExpression;
 			m_context = context;
+			m_tryExtractValue = tryExtractValue;
 		}
 
 		/// <summary>
@@ -34,17 +38,19 @@ namespace Faithlife.Testing
 			if (IsNoOp)
 				return Assertable<TResult>.NoOp();
 
-			var valueExpression = CoalesceWith(mapExpression);
+			var (getValueExpression, message) = CoalesceWith(mapExpression);
 
-			var (value, message) = AssertEx.GetValueOrNullMessage(valueExpression, m_context);
-
-			if (message != null)
+			if (message == null)
 			{
-				TestFrameworkProvider.Fail(message);
-				return Assertable<TResult>.NoOp();
+				TResult value;
+				(value, message) = AssertEx.GetValueOrNullMessage(getValueExpression, m_context);
+
+				if (message == null)
+					return new Assertable<TResult>(value, getValueExpression.Body, m_context, null);
 			}
 
-			return new Assertable<TResult>(value, valueExpression, m_context);
+			TestFrameworkProvider.Fail(message);
+			return Assertable<TResult>.NoOp();
 		}
 
 		/// <summary>
@@ -59,14 +65,21 @@ namespace Faithlife.Testing
 			if (IsNoOp)
 				throw new InvalidOperationException("A previous assertion failed.");
 
-			var valueExpression = CoalesceWith(mapExpression);
+			var (getValueExpression, message) = CoalesceWith(mapExpression);
 
-			var (value, message) = AssertEx.GetValueOrNullMessage(valueExpression, m_context);
+			if (message == null)
+			{
+				TResult? value;
+				(value, message) = AssertEx.GetValueOrNullMessage(getValueExpression, m_context);
 
-			if (message != null)
-				TestFrameworkProvider.Fail(message);
+				if (message == null)
+					return value.Value;
+			}
 
-			return value.Value;
+			TestFrameworkProvider.Fail(message);
+
+			// This only executes when the test-framework supports multiple assertions.
+			throw new InvalidOperationException("Nullable object must have a value.");
 		}
 
 		/// <summary>
@@ -80,7 +93,9 @@ namespace Faithlife.Testing
 
 			if (!IsNoOp)
 			{
-				var message = AssertEx.GetMessageIfFalse(CoalesceWith(predicateExpression), m_context);
+				var (getValueExpression, message) = CoalesceWith(predicateExpression);
+
+				message ??= AssertEx.GetMessageIfFalse(getValueExpression, m_context);
 
 				if (message != null)
 					TestFrameworkProvider.Fail(message);
@@ -98,20 +113,14 @@ namespace Faithlife.Testing
 			if (assertionExpression == null)
 				throw new ArgumentNullException(nameof(assertionExpression));
 
-			if (IsNoOp)
-				return this;
-
-			var visitor = new ReplaceParameterWithExpressionVisitor(assertionExpression.Parameters, m_valueExpression.Body);
-			var coalescedAssertion = Expression.Lambda<Action>(visitor.Visit(assertionExpression.Body));
-			var assertFunc = coalescedAssertion.Compile();
-
-			try
+			if (!IsNoOp)
 			{
-				assertFunc();
-			}
-			catch (Exception exception)
-			{
-				TestFrameworkProvider.Fail(AssertEx.GetDiagnosticMessage(coalescedAssertion.Body, exception, m_context));
+				var (actionExpression, message) = CoalesceWith(assertionExpression);
+
+				message ??= AssertEx.GetMessageIfException(Expression.Lambda<Action>(actionExpression), m_context);
+
+				if (message != null)
+					TestFrameworkProvider.Fail(message);
 			}
 
 			return this;
@@ -157,9 +166,25 @@ namespace Faithlife.Testing
 				newContext = newContext.Push(pair);
 
 			return newContext != m_context
-				? new Assertable<T>(Value, m_valueExpression, newContext)
+				? new Assertable<T>(Value, m_valueExpression, newContext, m_tryExtractValue)
 				: this;
 		}
+
+		/// <summary>
+		/// Tries to intercept the next assertion, and can choose to re-write it.
+		/// </summary>
+		public Assertable<T> WithExtrator(TryExtractValue extractor)
+		{
+			if (extractor == null)
+				throw new ArgumentNullException(nameof(extractor));
+
+			return new Assertable<T>(Value, m_valueExpression, m_context, extractor);
+		}
+
+		/// <summary>
+		/// Delegate which can optionally extract a `HasValue` expression from a lambda <paramref name="sourceExpression"/>.
+		/// </summary>
+		public delegate bool TryExtractValue(LambdaExpression sourceExpression, out LambdaExpression hasValueExpression, out LambdaExpression remainingExpression);
 
 		/// <summary>
 		/// The current value which assertions are made on.
@@ -175,31 +200,29 @@ namespace Faithlife.Testing
 #pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 #pragma warning restore CA2225 // Operator overloads have named alternates
 
-		private bool IsNoOp => m_valueExpression == null;
+		private bool IsNoOp => Value == null;
 
-		private Expression<Func<TResult>> CoalesceWith<TResult>(Expression<Func<T, TResult>> mapExpression)
+		private (Expression<Func<TResult>> GetValueExpression, string AssertMessage) CoalesceWith<TResult>(Expression<Func<T, TResult>> mapExpression)
 		{
-			var visitor = new ReplaceParameterWithExpressionVisitor(mapExpression.Parameters, m_valueExpression.Body);
-			return Expression.Lambda<Func<TResult>>(visitor.Visit(mapExpression.Body));
+			var (resultExpression, message) = CoalesceWith((LambdaExpression) mapExpression);
+			return (Expression.Lambda<Func<TResult>>(resultExpression), message);
 		}
 
-		private sealed class ReplaceParameterWithExpressionVisitor : ExpressionVisitor
+		private (Expression ValueExpression, string AssertMessage) CoalesceWith(LambdaExpression mapExpression)
 		{
-			public ReplaceParameterWithExpressionVisitor(IEnumerable<ParameterExpression> oldParameters, Expression newExpression)
+			if (m_tryExtractValue != null && m_tryExtractValue(mapExpression, out var hasValueExpression, out var remainingExpression))
 			{
-				m_parameterMap = oldParameters
-					.ToDictionary(p => p, _ => newExpression);
+				return ExpressionHelper.ReplaceParametersIfNotNull(
+					ExpressionHelper.ReplaceParameters(hasValueExpression, m_valueExpression),
+					remainingExpression,
+					m_context);
 			}
 
-			protected override Expression VisitParameter(ParameterExpression parameter) =>
-				m_parameterMap.TryGetValue(parameter, out var replacement)
-					? replacement
-					: base.VisitParameter(parameter);
-
-			private readonly IDictionary<ParameterExpression, Expression> m_parameterMap;
+			return (ExpressionHelper.ReplaceParameters(mapExpression, m_valueExpression), null);
 		}
 
-		private readonly Expression<Func<T>> m_valueExpression;
+		private readonly Expression m_valueExpression;
 		private readonly ImmutableStack<(string Name, object Value)> m_context;
+		private readonly TryExtractValue m_tryExtractValue;
 	}
 }

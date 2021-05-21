@@ -61,23 +61,23 @@ namespace Faithlife.Testing.Tests.UnitTests
 		}
 
 		[Test]
-		public void BuilderObjectContext() => AssertHasContext(b => b.Context(new { foo = "bar" }), "foo = \"bar\"");
+		public void AssertableObjectContext() => AssertHasContext(b => b.Context(new { foo = "bar" }), "foo = \"bar\"");
 
 		[Test]
-		public void BuilderNameValueContext() => AssertHasContext(b => b.Context("foo", "bar"), "foo = \"bar\"");
+		public void AssertableNameValueContext() => AssertHasContext(b => b.Context("foo", "bar"), "foo = \"bar\"");
 
 		[Test]
-		public void BuilderTupleContext() => AssertHasContext(b => b.Context(("foo", "bar")), "foo = \"bar\"");
+		public void AssertableTupleContext() => AssertHasContext(b => b.Context(("foo", "bar")), "foo = \"bar\"");
 
 		[Test]
-		public void BuilderExpressionContext()
+		public void AssertableExpressionContext()
 		{
 			var foo = "bar";
 			AssertHasContext(b => b.Context(() => foo), "foo = \"bar\"");
 		}
 
 		[Test]
-		public void BuilderNoContext()
+		public void AssertableNoContext()
 		{
 			var builder = AssertEx.HasValue(new object())
 				.Context(Enumerable.Empty<(string, object)>());
