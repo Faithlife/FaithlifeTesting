@@ -58,7 +58,7 @@ namespace Faithlife.Testing
 		{
 			if (valueExpression == null)
 				throw new ArgumentNullException(nameof(valueExpression));
-			
+
 			var (value, message) = GetValueOrNullMessage(valueExpression, s_emptyContext);
 
 			if (message != null)
@@ -313,7 +313,7 @@ namespace Faithlife.Testing
 			sb.AppendLineLf("Expected:");
 			sb.Append('\t');
 			sb.Append(expected);
-			
+
 			if (actualValues.Any())
 			{
 				sb.AppendLineLf();

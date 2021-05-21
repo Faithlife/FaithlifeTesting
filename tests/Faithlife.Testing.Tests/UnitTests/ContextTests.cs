@@ -88,7 +88,6 @@ namespace Faithlife.Testing.Tests.UnitTests
 				.AssertMessageIsExpected(assertion.Message);
 		}
 
-
 		[Test]
 		public void TestContextCapturedVariable()
 		{

@@ -26,13 +26,13 @@ namespace Faithlife.Testing.TestFrameworks
 					var message = Expression.Parameter(typeof(string), "message");
 					var failMethod =
 						(assembly.GetType(failTypeName)
-							?? throw new Exception($"Failed to create the assertion type for the current test framework: \"{failTypeName}, {assembly.FullName}\""))
-						.GetMethod(failMethodName, BindingFlags.Public | BindingFlags.Static, null, new []{ typeof(string) }, null)
-							?? throw new Exception($"Failed to create the assert-failure method for the current test framework: \"{failTypeName}.{failMethodName}, {assembly.FullName}\"");
+							?? throw new InvalidOperationException($"Failed to create the assertion type for the current test framework: \"{failTypeName}, {assembly.FullName}\""))
+						.GetMethod(failMethodName, BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null)
+							?? throw new InvalidOperationException($"Failed to create the assert-failure method for the current test framework: \"{failTypeName}.{failMethodName}, {assembly.FullName}\"");
 
 					var isolatedContext =
 						assembly.GetType(isolatedContextTypeName)
-						?? throw new Exception($"Failed to create the Isolated Context type for the current test framework: \"{isolatedContextTypeName}, {assembly.FullName}\"");
+						?? throw new InvalidOperationException($"Failed to create the Isolated Context type for the current test framework: \"{isolatedContextTypeName}, {assembly.FullName}\"");
 
 					return (
 						Expression.Lambda<Action<string>>(Expression.Call(null, failMethod, message), message).Compile(),

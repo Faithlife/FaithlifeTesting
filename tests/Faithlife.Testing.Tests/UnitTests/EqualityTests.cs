@@ -53,8 +53,16 @@ Actual:
 		public void TestMultidimentionalArrayEquality()
 		{
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-			var foo = new [,] { { 1, 2, 3 }, { 4, 5, 6 } };
-			var bar = new [,] { { 1, 2, 3 }, { 4, 5, 6 } };
+			var foo = new[,]
+			{
+				{ 1, 2, 3 },
+				{ 4, 5, 6 },
+			};
+			var bar = new[,]
+			{
+				{ 1, 2, 3 },
+				{ 4, 5, 6 },
+			};
 #pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
 
 			AssertEx.IsTrue(() => foo == bar);
@@ -63,7 +71,7 @@ Actual:
 		[Test]
 		public void TestArrayAndListEqualityOperator()
 		{
-			IEnumerable<int> foo = new [] { 1, 2, 3 };
+			IEnumerable<int> foo = new[] { 1, 2, 3 };
 			IEnumerable<int> bar = new List<int> { 1, 2, 3 };
 
 			// ReSharper disable once PossibleUnintendedReferenceComparison

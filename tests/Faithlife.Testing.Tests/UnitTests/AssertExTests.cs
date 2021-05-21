@@ -156,7 +156,7 @@ Actual:
 	value = []
 
 System.InvalidOperationException: Sequence contains no elements",
-			expectStackTrace:true)]
+			expectStackTrace: true)]
 		public void TestSingle()
 		{
 			var value = Array.Empty<FooDto>();
@@ -192,7 +192,7 @@ Actual:
 	value = {}
 
 System.Collections.Generic.KeyNotFoundException: The given key 'foo' was not present in the dictionary.",
-			expectStackTrace:true)]
+			expectStackTrace: true)]
 		public void TestDictionaryIndex()
 		{
 			var value = new Dictionary<string, int>();
@@ -216,7 +216,7 @@ Actual:
 Actual:
 	value = null
 
-System.ArgumentNullException: Value cannot be null. (Parameter 'source')", expectStackTrace:true)]
+System.ArgumentNullException: Value cannot be null. (Parameter 'source')", expectStackTrace: true)]
 		public void TestLinqMethodNull()
 		{
 			int[] value = null;
@@ -345,7 +345,7 @@ Actual:
 	foo = null
 
 System.NullReferenceException: Object reference not set to an instance of an object.",
-			expectStackTrace:true)]
+			expectStackTrace: true)]
 		public void TestDtoPropertyNull()
 		{
 			FooDto foo = null;
@@ -395,7 +395,7 @@ Actual:
 Actual:
 	foos = [null, { ""bar"": ""Buzz"", ""baz"": 1 }]
 
-System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace:true)]
+System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace: true)]
 		public void TestAnyWithNullElements()
 		{
 			var foos = new[] { null, new FooDto { Baz = 1, Bar = "Buzz" } };
@@ -409,7 +409,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 Actual:
 	foos = [{ ""baz"": 2 }, { ""bar"": ""Buzz"", ""baz"": 1 }]
 
-System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace:true)]
+System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace: true)]
 		public void TestAnyWithNullProperties()
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
@@ -436,6 +436,7 @@ Actual:
 		public void TestNotAny()
 		{
 			var foos = new[] { new FooDto { Baz = 2 }, new FooDto { Baz = 1, Bar = "Buzz" } };
+
 			// ReSharper disable once SimplifyLinqExpressionUseAll
 			AssertEx.IsTrue(() => !foos.Any(f => f.Baz == 2));
 		}
@@ -558,7 +559,6 @@ Actual:
 				AssertEx.IsTrue(() => actual[i] == 1);
 		}
 
-
 		private sealed class FooDto
 		{
 			public string Id { get; set; }
@@ -581,6 +581,7 @@ Actual:
 		private sealed class FooImpl : FooBase
 		{
 #pragma warning disable CA1822 // Mark members as static
+			// ReSharper disable once MemberCanBeMadeStatic.Local
 			public void DoFalseAssert()
 #pragma warning restore CA1822 // Mark members as static
 			{

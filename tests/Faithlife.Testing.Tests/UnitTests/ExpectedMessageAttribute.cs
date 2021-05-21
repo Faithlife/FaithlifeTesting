@@ -17,9 +17,12 @@ namespace Faithlife.Testing.Tests.UnitTests
 	{
 		public ExpectedMessageAttribute(string expectedMessage, bool expectStackTrace = false)
 		{
-			m_expectStackTrace = expectStackTrace;
-			m_expectedMessage = Normalize(expectedMessage);
+			ExpectedMessage = Normalize(expectedMessage);
+			ExpectStackTrace = expectStackTrace;
 		}
+
+		public string ExpectedMessage { get; }
+		public bool ExpectStackTrace { get; }
 
 		public static void AssertAreMostlyEqual(string expected, string actual, string message = null)
 			=> Assert.AreEqual(Normalize(expected), Normalize(actual), message);
@@ -30,10 +33,10 @@ namespace Faithlife.Testing.Tests.UnitTests
 		{
 			message = Normalize(message);
 
-			if (m_expectStackTrace && m_expectedMessage.Length <= message.Length)
+			if (ExpectStackTrace && ExpectedMessage.Length <= message.Length)
 			{
-				Assert.AreEqual(m_expectedMessage, message[..m_expectedMessage.Length], message);
-				var stackTrace = message[m_expectedMessage.Length..];
+				Assert.AreEqual(ExpectedMessage, message[..ExpectedMessage.Length], message);
+				var stackTrace = message[ExpectedMessage.Length..];
 
 				Assert.IsNotEmpty(stackTrace, "Expected stack trace, got: " + message);
 
@@ -42,7 +45,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 			}
 			else
 			{
-				Assert.AreEqual(m_expectedMessage, message);
+				Assert.AreEqual(ExpectedMessage, message);
 			}
 		}
 
@@ -94,8 +97,5 @@ namespace Faithlife.Testing.Tests.UnitTests
 
 			private readonly Action<string> m_onAssertionFailure;
 		}
-
-		private readonly string m_expectedMessage;
-		private readonly bool m_expectStackTrace;
 	}
 }

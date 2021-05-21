@@ -20,5 +20,4 @@ namespace Faithlife.Testing.TestFrameworks
 			() => s_frameworks.First(f => f.IsAvailable),
 			LazyThreadSafetyMode.ExecutionAndPublication);
 	}
-
 }

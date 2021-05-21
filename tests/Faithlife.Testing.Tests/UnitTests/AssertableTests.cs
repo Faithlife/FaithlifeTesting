@@ -33,7 +33,9 @@ namespace Faithlife.Testing.Tests.UnitTests
 				.HasValue(v => (int?) v.Length);
 		}
 
-		private void NoOp() { }
+		private static void NoOp()
+		{
+		}
 
 		[Test, ExpectedMessage(@"Expected:
 	foo

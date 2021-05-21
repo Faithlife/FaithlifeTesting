@@ -42,7 +42,7 @@ namespace Faithlife.Testing
 
 			var properties = DtoInfo.GetInfo(typeof(TResponse))
 				.Properties
-				.Select(p => (p.Name, IsContent: IsProperty(p, statusCodeString), Value: p.GetValue(response)))
+				.Select(p => (p.Name, IsContent: IsContentProperty(p.Name), Value: p.GetValue(response)))
 				.Where(p => !IsDefault(p.Value))
 				.ToList();
 
@@ -66,7 +66,7 @@ namespace Faithlife.Testing
 				var visitor = new MemberReplacingExpressionVisitor(sourceParameter, "response");
 				var replacedBody = visitor.Visit(sourceExpression.Body);
 
-				if (!visitor.TryGetSingleClassParameter(out var memberInfo, out var responseParameter) || memberInfo.Name != statusCodeString)
+				if (!visitor.TryGetSingleClassParameter(out var memberInfo, out var responseParameter) || !IsContentProperty(memberInfo.Name))
 					return false;
 
 				hasValueExpression = Expression.Lambda(Expression.MakeMemberAccess(sourceParameter, memberInfo), sourceParameter);
@@ -74,11 +74,11 @@ namespace Faithlife.Testing
 
 				return true;
 			}
-		}
 
-		// Logic matches https://github.com/Faithlife/FaithlifeWebRequests/blob/5d04e85c62ae0ccea2ca7e45f5d40d650a7acd0b/src/Faithlife.WebRequests/Json/AutoWebServiceRequest.cs#L142
-		private static bool IsProperty(IDtoProperty property, string propertyName)
-			=> string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase);
+			// Logic matches https://github.com/Faithlife/FaithlifeWebRequests/blob/5d04e85c62ae0ccea2ca7e45f5d40d650a7acd0b/src/Faithlife.WebRequests/Json/AutoWebServiceRequest.cs#L142
+			bool IsContentProperty(string propertyName)
+				=> string.Equals(statusCodeString, propertyName, StringComparison.OrdinalIgnoreCase);
+		}
 
 		private static IEnumerable<(string Name, object Value)> GetContext(WebServiceException exception, IEnumerable<(string Name, bool IsContent, object Value)> properties)
 		{

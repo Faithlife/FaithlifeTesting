@@ -7,7 +7,7 @@ using Faithlife.Testing.TestFrameworks;
 namespace Faithlife.Testing
 {
 	/// <summary>
-	/// Allows making assertions about a particular value of type <typeparamref name="T"/>
+	/// Allows making assertions about a particular value of type <typeparamref name="T"/>.
 	/// </summary>
 	public sealed class Assertable<T>
 		where T : class
@@ -19,7 +19,7 @@ namespace Faithlife.Testing
 
 		private Assertable(T value, Expression valueExpression, ImmutableStack<(string Name, object Value)> context, TryExtractValue tryExtractValue)
 		{
-			Value = value ;
+			Value = value;
 			m_valueExpression = valueExpression;
 			m_context = context;
 			m_tryExtractValue = tryExtractValue;
@@ -125,7 +125,6 @@ namespace Faithlife.Testing
 
 			return this;
 		}
-
 
 		/// <summary>
 		/// Adds informational context to all assertions made using this chain.

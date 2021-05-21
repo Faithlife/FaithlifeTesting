@@ -11,7 +11,6 @@ namespace Faithlife.Testing.TestFrameworks
 	/// <summary>
 	/// Waits for a value which pases provided assertions.
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
 	public sealed class WaitUntilAssertable<T>
 		where T : class
 	{
@@ -160,11 +159,11 @@ namespace Faithlife.Testing.TestFrameworks
 			{
 				using (TestFrameworkProvider.GetIsolatedContext())
 				{
+					// ReSharper disable once EmptyGeneralCatchClause
 					try
 					{
 						return await actionAsync();
 					}
-					// ReSharper disable once EmptyGeneralCatchClause
 					catch (Exception)
 					{
 					}
@@ -185,7 +184,7 @@ namespace Faithlife.Testing.TestFrameworks
 					return await actionAsync();
 			}
 		}
-		
+
 		private const int c_sleepTimeMs = 100;
 		private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromSeconds(30);
 

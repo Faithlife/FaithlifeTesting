@@ -12,13 +12,13 @@ namespace Faithlife.Testing.TestFrameworks
 	public class AssertionFailedException : Exception
 #pragma warning restore CA1032, RCS1194
 	{
-		/// <inheritdoc />
+		/// <summary>Initializes a new instance of the <see cref="AssertionFailedException" /> class.</summary>
 		public AssertionFailedException(string message)
 			: base(message)
 		{
 		}
 
-		/// <inheritdoc />
+		/// <summary>Initializes a new instance of the <see cref="AssertionFailedException" /> class.</summary>
 		protected AssertionFailedException(SerializationInfo info, StreamingContext context)
 			: base(info, context)
 		{
