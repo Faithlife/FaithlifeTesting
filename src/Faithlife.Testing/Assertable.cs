@@ -147,6 +147,18 @@ namespace Faithlife.Testing
 		public Assertable<T> Context(object context) => Context(AssertEx.GetContextFromObject(context));
 
 		/// <summary>
+		/// Copies informational context from an <paramref name="other"/> assertable.
+		/// </summary>
+		public Assertable<T> Context<TOther>(Assertable<TOther> other)
+			where TOther : class
+		{
+			if (other == null)
+				throw new ArgumentNullException(nameof(other));
+
+			return Context(other.m_context);
+		}
+
+		/// <summary>
 		/// Adds informational context to all assertions made using this chain.
 		/// </summary>
 		public Assertable<T> Context(params Expression<Func<object>>[] contextExpressions) => Context(AssertEx.GetContextFromExpressions(contextExpressions));

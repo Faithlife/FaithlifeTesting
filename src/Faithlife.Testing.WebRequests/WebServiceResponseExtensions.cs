@@ -28,7 +28,7 @@ namespace Faithlife.Testing
 			if (response == null)
 				throw new ArgumentNullException(nameof(response));
 
-			return response.Apply(a => a.Value.AssertResponse());
+			return response.Apply(a => a.Value.AssertResponse().Context(a));
 		}
 
 		public static Assertable<TResponse> AssertResponse<TResponse>(this TResponse response)

@@ -109,25 +109,25 @@ namespace Faithlife.Testing
 		/// <summary>
 		/// Retries <paramref name="action"/> until all assertions chained after this method pass.
 		/// </summary>
-		public static WaitUntilAssertable<T> WaitUntil<T>(Func<T> action)
+		public static WaitUntilAssertable<T> WaitUntil<T>(Func<T> action, string name = null)
 			where T : class
 		{
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
 
-			return new WaitUntilAssertable<T>(() => Task.FromResult(HasValue(action())));
+			return new WaitUntilAssertable<T>(() => Task.FromResult(HasValue(action(), name)));
 		}
 
 		/// <summary>
 		/// Retries <paramref name="actionAsync"/> until all assertions chained after this method pass.
 		/// </summary>
-		public static WaitUntilAssertable<T> WaitUntil<T>(Func<Task<T>> actionAsync)
+		public static WaitUntilAssertable<T> WaitUntil<T>(Func<Task<T>> actionAsync, string name = null)
 			where T : class
 		{
 			if (actionAsync == null)
 				throw new ArgumentNullException(nameof(actionAsync));
 
-			return new WaitUntilAssertable<T>(async () => HasValue(await actionAsync()));
+			return new WaitUntilAssertable<T>(async () => HasValue(await actionAsync(), name));
 		}
 
 		/// <summary>

@@ -5,8 +5,9 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Faithlife.Testing.TestFrameworks;
 
-namespace Faithlife.Testing.TestFrameworks
+namespace Faithlife.Testing
 {
 	/// <summary>
 	/// Waits for a value which pases provided assertions.
