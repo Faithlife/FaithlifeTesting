@@ -149,7 +149,7 @@ namespace Faithlife.Testing
 		/// <summary>
 		/// Copies informational context from an <paramref name="other"/> assertable.
 		/// </summary>
-		public Assertable<T> Context<TOther>(Assertable<TOther> other)
+		internal Assertable<T> Context<TOther>(Assertable<TOther> other)
 			where TOther : class
 		{
 			if (other == null)

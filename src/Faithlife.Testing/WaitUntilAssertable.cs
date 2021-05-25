@@ -120,21 +120,25 @@ namespace Faithlife.Testing
 		/// <summary>
 		/// Applies a <paramref name="transform"/> to the assertion we will wait for.
 		/// </summary>
-		public WaitUntilAssertable<TResult> Apply<TResult>(Func<Assertable<T>, Assertable<TResult>> transform)
+		public WaitUntilAssertable<TResult> Apply<TResult>(Func<T, Assertable<TResult>> transform)
 			where TResult : class
 		{
 			if (transform == null)
 				throw new ArgumentNullException(nameof(transform));
 
 			return new WaitUntilAssertable<TResult>(
-				async () => transform(await m_getAssertable()),
+				async () =>
+				{
+					var source = await m_getAssertable();
+					return transform(source.Value).Context(source);
+				},
 				m_timeout);
 		}
 
 		/// <summary>
 		/// Starts waiting.
 		/// </summary>
-		public TaskAwaiter<T> GetAwaiter() => WaitForValue(async () => (await m_getAssertable()).Value).GetAwaiter();
+		public TaskAwaiter<T> GetAwaiter() => ((Task<T>) this).GetAwaiter();
 
 		/// <summary>
 		/// Synchronously waits for an appropiate value.
@@ -147,8 +151,27 @@ namespace Faithlife.Testing
 #pragma warning disable CA2225 // Operator overloads have named alternates
 #pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
 		public static implicit operator T(WaitUntilAssertable<T> source) => source?.Value ?? throw new ArgumentNullException(nameof(source));
+
+		public static implicit operator Task<T>(WaitUntilAssertable<T> source)
+		{
+			if (source == null)
+				throw new ArgumentNullException(nameof(source));
+
+			return source.WaitForValue(async () => (await source.m_getAssertable()).Value);
+		}
 #pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 #pragma warning restore CA2225 // Operator overloads have named alternates
+
+		private WaitUntilAssertable<TResult> Apply<TResult>(Func<Assertable<T>, Assertable<TResult>> transform)
+			where TResult : class
+		{
+			if (transform == null)
+				throw new ArgumentNullException(nameof(transform));
+
+			return new WaitUntilAssertable<TResult>(
+				async () => transform(await m_getAssertable()),
+				m_timeout);
+		}
 
 		private async Task<TResult> WaitForValue<TResult>(Func<Task<TResult>> actionAsync)
 		{

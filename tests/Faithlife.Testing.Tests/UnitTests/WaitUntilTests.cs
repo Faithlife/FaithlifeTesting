@@ -49,19 +49,33 @@ Context:
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 3);
 		}
 
+		[Test]
+		public async Task TestWaitAll()
+		{
+			var fooService = new FooService();
+
+			await Task.WhenAll(
+				AssertEx.WaitUntil(() => fooService.GetFooAsync())
+					.IsTrue(f => f.Bar == "bar"),
+				AssertEx.WaitUntil(() => fooService.GetFooAsync())
+					.IsTrue(f => f.Bar == "bar"));
+
+			AssertEx.IsTrue(() => fooService.TryCount == 2);
+		}
+
 		private sealed class FooService
 		{
 			public Task<FooDto> GetFooAsync()
 			{
-				m_tryCount++;
+				TryCount++;
 				return Task.FromResult(new FooDto
 				{
 					Bar = "bar",
-					TryCount = m_tryCount,
+					TryCount = TryCount,
 				});
 			}
 
-			private int m_tryCount;
+			public int TryCount { get; private set; }
 		}
 
 		private sealed class FooDto
