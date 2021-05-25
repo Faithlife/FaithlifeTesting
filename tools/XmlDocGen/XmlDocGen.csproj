@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Faithlife.Testing.WebRequests\Faithlife.Testing.WebRequests.csproj" />
     <ProjectReference Include="..\..\src\Faithlife.Testing\Faithlife.Testing.csproj" />
     <ProjectReference Include="..\..\src\Faithlife.Testing.RabbitMq\Faithlife.Testing.RabbitMq.csproj" />
   </ItemGroup>
