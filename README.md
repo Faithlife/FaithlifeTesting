@@ -2,81 +2,142 @@
 
 [![Build](https://github.com/Faithlife/FaithlifeTesting/workflows/Build/badge.svg)](https://github.com/Faithlife/FaithlifeTesting/actions?query=workflow%3ABuild) [![NuGet](https://img.shields.io/nuget/v/Faithlife.Testing.svg)](https://www.nuget.org/packages/Faithlife.Testing)
 
-A collection of libraries for better testing in C#.
+`Faithlife.Testing` uses the power of C# expression trees to help pinpoint exactly why your assertions are failing.
 
 * [Documentation](https://faithlife.github.io/FaithlifeTesting/)
 * [Release Notes](ReleaseNotes.md)
 
 ## Table of Contents
 
-* [Why use `Faithlife.Testing`?](#why-use-faithlife.testing?)
-* [Advanced Examples](#advanced-examples)
-* [Limitations of Expressions](#limitations-of-expressions)
+- [Faithlife.Testing](#faithlifetesting)
+  - [Table of Contents](#table-of-contents)
+  - [Endoresements](#endoresements)
+  - [Why use `Faithlife.Testing`?](#why-use-faithlifetesting)
+  - [Advanced Examples](#advanced-examples)
+    - [`Assertable<T>`](#assertablet)
+    - [`Context`](#context)
+    - [`WaitUntil`](#waituntil)
+  - [Limitations of Expressions](#limitations-of-expressions)
+
+## Endoresements
+
+"AssertEx is such a blessing, [...] it feels like a whole new world of possibilities has opened up to me."
+
+  \- Joseph Stewart
+
+"My mind was blown the first time I tried out a failure with AssertEx in linqpad."
+
+  \- Ryan Johnson
+
+"Oh, wow. That's amazing."
+
+  \- Patrick Nausha, upon learning how AssertEx handles boolean logic
 
 ## Why use `Faithlife.Testing`?
-
-`Faithlife.Testing` uses the power of C# expression trees to help pinpoint exactly why your assertions are failing.
 
 Some of the main problems that `Faithlife.Testing` is attempting to solve is:
 
 * The requirement to learn a new "syntax" when using a new test runner or assertion library.
-	```csharp
-	string actual = "test";
-	Assert.That(actual, Is.Not.Null.And.Length.AtLeast(3));
-	```
-* Many assertion libraries have common pits of failure, like using something like `Assert.True`. You're never going to get a helpful failure message out of an assertion like that.
-	```csharp
-	bool isFrobbable = false;
-	Assert.True(isFrobbable);
-	...
-	Expected: True
-  	But was: False
-	```
-* Needing to write "guard" assertions to get helpful failure messages. If you have a deeply nested object you want to assert on, you'd normally want to assert every property along the way isn't null, which can become quite tedious:
-	```
-	Assert.NotNull(foo);
-	Assert.NotNull(foo.Bar);
-	Assert.NotNull(foo.Bar.Baz);
-	```
 
-With Faithlife.Testing, those problems go away!
+ ```csharp
+ string actual = "ab";
+ Assert.That(actual, Is.Not.Null.And.Length.AtLeast(3));
+ ```
+
+* Many assertion libraries have common pits of failure, like using something like `Assert.True`. You're never going to get a helpful failure message out of an assertion like that.
+
+ ```csharp
+ bool isFrobbable = false;
+ Assert.True(isFrobbable);
+ ...
+ Expected: True
+ But was: False
+ ```
+
+* Needing to write "guard" assertions to get helpful failure messages. If you have a deeply nested object you want to assert on, you'd normally want to assert every property along the way isn't null, which can become quite tedious:
+
+```csharp
+Assert.NotNull(foo);
+Assert.NotNull(foo.Bar);
+Assert.NotNull(foo.Bar.Baz);
+```
+
+* Having many assertions fail, but only seeing one failure-message. When multiple things fail, you want to see all the failures -- but no more than that.
+
+```csharp
+var foo = new Foo
+{
+    Name = "name",
+    Id = 1,
+    Bar = null,
+ }
+ Assert.AreEqual("test", foo.Name);
+ Assert.AreEqual(1, foo.Id);
+ Assert.NotNull(foo.Bar.Baz);
+ ```
+
+With `Faithlife.Testing`, those problems go away!
 
 * No learning a new syntax beyond calling `AssertEx.IsTrue` and `AssertEx.HasValue`, simply use C#!
-	```csharp
-	string actual = "test";
-	AssertEx.IsTrue(() => actual.Length >= 3);
-	...
-	Expected:
-		actual.Length >= 3
 
-	Actual:
-		actual.Length = 4
-	```	
+ ```csharp
+ string actual = "ab";
+ AssertEx.IsTrue(() => actual.Length >= 3);
+ ...
+ Expected:
+    actual.Length >= 3
+
+ Actual:
+    actual.Length = 2
+ ```
+
 * No more checking boolean expression against `IsTrue`! Just run the boolean expression.
-	```csharp
-	bool isFrobbable = false;
-	AssertEx.IsTrue(() => isFrobbable);
-	...
-	Expected:
-		isFrobbable
 
-	Actual:
-		isFrobbable = false
-	```
+ ```csharp
+ bool isFrobbable = false;
+ AssertEx.IsTrue(() => isFrobbable);
+ ...
+ Expected:
+    isFrobbable
+
+ Actual:
+    isFrobbable = false
+ ```
+
 * There's no longe a need to use guard assertions so that you can know which property in a chain was the one that null.
-	```csharp
-	var foo = new Foo
-	{
-		Bar = null
-	};
-	AssertEx.HasValue(() => foo.Bar.Baz);
-	...
-	Expected:
-		foo.Bar.Baz != null
 
-	Actual:
-		foo.Bar = null
-	```
+ ```csharp
+ var foo = new Foo
+ {
+    Bar = null
+ };
+ AssertEx.HasValue(() => foo.Bar.Baz);
+ ...
+ Expected:
+    foo.Bar.Baz != null
+
+ Actual:
+   foo.Bar = null
+ ```
+
+* AssertEx will deconstruct boolean logic to show exactly why each assertion failed, and will elide the branches which did not fail.
+
+ ```csharp
+ var foo = new Foo
+ {
+    Name = "name",
+    Id = 1,
+    Bar = null,
+ }
+ AssertEx.IsTrue(() => foo.Name == "test" && foo.Id == 1 && foo.Bar.Baz != null);
+ ...
+ Expected:
+    foo.Name == "test" && foo.Bar.Baz != null
+
+ Actual:
+    foo.Name = "name"
+    foo.Bar = null
+ ```
 
 ## Advanced Examples
 
