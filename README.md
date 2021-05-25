@@ -9,15 +9,13 @@
 
 ## Table of Contents
 
-- [Faithlife.Testing](#faithlifetesting)
-  - [Table of Contents](#table-of-contents)
-  - [Endoresements](#endoresements)
-  - [Why use `Faithlife.Testing`?](#why-use-faithlifetesting)
-  - [Advanced Examples](#advanced-examples)
-    - [`Assertable<T>`](#assertablet)
-    - [`Context`](#context)
-    - [`WaitUntil`](#waituntil)
-  - [Limitations of Expressions](#limitations-of-expressions)
+* [Endoresements](#endoresements)
+* [Why use `Faithlife.Testing`?](#why-use-faithlifetesting)
+* [Advanced Examples](#advanced-examples)
+  * [`Assertable<T>`](#assertablet)
+  * [`Context`](#context)
+  * [`WaitUntil`](#waituntil)
+* [Limitations of Expressions](#limitations-of-expressions)
 
 ## Endoresements
 
