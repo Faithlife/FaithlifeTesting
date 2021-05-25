@@ -14,7 +14,6 @@
  *
  * ***************************************************************************/
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -286,13 +285,13 @@ namespace System.Linq.Expressions
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
 		private void VisitExpressions<T>(char open, IList<T> expressions, char close)
-		    where T : Expression
+			where T : Expression
 		{
 			VisitExpressions(open, expressions, close, ", ");
 		}
 
 		private void VisitExpressions<T>(char open, IList<T> expressions, char close, string seperator)
-		    where T : Expression
+			where T : Expression
 		{
 			Out(open);
 			if (expressions != null)
@@ -474,9 +473,9 @@ namespace System.Linq.Expressions
 							op = "||=";
 						}
 						else
-                        {
-                            op = "|=";
-                        }
+						{
+							op = "|=";
+						}
 						break;
 					case ExpressionType.ExclusiveOr:
 						op = "^";

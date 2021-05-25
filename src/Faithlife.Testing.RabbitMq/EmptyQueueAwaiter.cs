@@ -114,15 +114,15 @@ namespace Faithlife.Testing.RabbitMq
 			public int Messages { get; set; }
 		}
 
-		private static readonly WebHeaderCollection s_authorizationHeader = new WebHeaderCollection { { "Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("guest:guest")) } };
+		private static readonly WebHeaderCollection s_authorizationHeader = new() { { "Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("guest:guest")) } };
 
 		private readonly string m_queueName;
 		private readonly Uri m_uri;
 		private readonly int m_secondsDelay;
-		private readonly object m_lock = new object();
+		private readonly object m_lock = new();
 
-		private List<TaskCompletionSource<object>> m_awaiters = new List<TaskCompletionSource<object>>();
+		private List<TaskCompletionSource<object>> m_awaiters = new();
 		private Exception m_exception;
-		private TaskCompletionSource<object> m_loopAwaiter = new TaskCompletionSource<object>();
+		private TaskCompletionSource<object> m_loopAwaiter = new();
 	}
 }

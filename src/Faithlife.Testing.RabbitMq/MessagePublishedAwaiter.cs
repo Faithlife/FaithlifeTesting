@@ -51,9 +51,9 @@ namespace Faithlife.Testing.RabbitMq
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
-		public LazyTask<AssertEx.Builder<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
+		public LazyTask<Assertable<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
 		{
-			var awaiter = new Awaiter(predicateExpression);
+			var awaiter = new Awaiter(predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression)));
 
 			lock (m_lock)
 			{
@@ -63,7 +63,7 @@ namespace Faithlife.Testing.RabbitMq
 				m_awaiters.Add(awaiter);
 			}
 
-			return new LazyTask<AssertEx.Builder<TMessage>>(async () =>
+			return new LazyTask<Assertable<TMessage>>(async () =>
 			{
 				// LazyTask ensures that the timeout begins ticking once we start awaiting, not when first registering the awaiter.
 				// delayMilliseconds is not a `const` so that `AssertEx` can capture its name.
@@ -84,13 +84,13 @@ namespace Faithlife.Testing.RabbitMq
 						var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
 						var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, predicateExpression);
 
-						AssertEx.Select(() => messages)
-							.Select(Expression.Lambda<Func<IReadOnlyCollection<TMessage>, TMessage>>(body, param));
+						AssertEx.HasValue(() => messages)
+							.HasValue(Expression.Lambda<Func<IReadOnlyCollection<TMessage>, TMessage>>(body, param));
 					}
 				}
 
 				var message = result.Result;
-				return AssertEx.Select(() => message);
+				return AssertEx.HasValue(() => message);
 			});
 		}
 
@@ -145,7 +145,7 @@ namespace Faithlife.Testing.RabbitMq
 				m_predicate = predicateExpression.Compile();
 			}
 
-			public TaskCompletionSource<TMessage> Completion { get; } = new TaskCompletionSource<TMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+			public TaskCompletionSource<TMessage> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			public int MessageCount { get; private set; }
 			public IReadOnlyCollection<TMessage> Messages => m_messages.AsReadOnly();
@@ -164,10 +164,10 @@ namespace Faithlife.Testing.RabbitMq
 			private const int c_messageLimit = 10;
 
 			private readonly Func<TMessage, bool> m_predicate;
-			private readonly List<TMessage> m_messages = new List<TMessage>(c_messageLimit);
+			private readonly List<TMessage> m_messages = new(c_messageLimit);
 		}
 
-		private static readonly JsonSettings s_jsonInputSettings = new JsonSettings { RejectsExtraProperties = false };
+		private static readonly JsonSettings s_jsonInputSettings = new() { RejectsExtraProperties = false };
 
 		private static readonly MethodInfo s_first = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).Single(
 				m =>
@@ -181,8 +181,8 @@ namespace Faithlife.Testing.RabbitMq
 						&& p[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>);
 				});
 
-		private readonly object m_lock = new object();
-		private readonly CancellationTokenSource m_cancellationTokenSource = new CancellationTokenSource();
+		private readonly object m_lock = new();
+		private readonly CancellationTokenSource m_cancellationTokenSource = new();
 
 		private readonly string m_serverName;
 		private readonly string m_exchangeName;
@@ -194,7 +194,7 @@ namespace Faithlife.Testing.RabbitMq
 		private readonly Subscription m_subscription;
 #pragma warning restore CS0618 // Type or member is obsolete
 
-		private readonly List<Awaiter> m_awaiters = new List<Awaiter>();
+		private readonly List<Awaiter> m_awaiters = new();
 		private Exception m_exception;
 	}
 }

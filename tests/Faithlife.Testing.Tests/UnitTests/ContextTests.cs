@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests
@@ -52,24 +54,110 @@ namespace Faithlife.Testing.Tests.UnitTests
 		}
 
 		[Test]
-		public void BuilderObjectContext() => AssertHasContext(b => b.Context(new { foo = "bar" }), "foo = \"bar\"");
+		public void NoContext()
+		{
+			using (AssertEx.Context(Enumerable.Empty<(string, object)>()))
+				AssertHasNoContext();
+		}
 
 		[Test]
-		public void BuilderNameValueContext() => AssertHasContext(b => b.Context("foo", "bar"), "foo = \"bar\"");
+		public void AssertableObjectContext() => AssertHasContext(b => b.Context(new { foo = "bar" }), "foo = \"bar\"");
 
 		[Test]
-		public void BuilderTupleContext() => AssertHasContext(b => b.Context(("foo", "bar")), "foo = \"bar\"");
+		public void AssertableNameValueContext() => AssertHasContext(b => b.Context("foo", "bar"), "foo = \"bar\"");
 
 		[Test]
-		public void BuilderExpressionContext()
+		public void AssertableTupleContext() => AssertHasContext(b => b.Context(("foo", "bar")), "foo = \"bar\"");
+
+		[Test]
+		public void AssertableExpressionContext()
 		{
 			var foo = "bar";
 			AssertHasContext(b => b.Context(() => foo), "foo = \"bar\"");
 		}
 
+		[Test]
+		public void AssertableNoContext()
+		{
+			var builder = AssertEx.HasValue(new object())
+				.Context(Enumerable.Empty<(string, object)>());
+
+			var assertion = Assert.Throws<AssertionException>(() => builder.IsTrue(o => false));
+			new ExpectedMessageAttribute(@"Expected:
+	false", expectStackTrace: false)
+				.AssertMessageIsExpected(assertion.Message);
+		}
+
+		[Test]
+		public void TestContextCapturedVariable()
+		{
+			var value = 1;
+			using var d = AssertEx.Context(() => value);
+			AssertHasContext(@"value = 1");
+		}
+
+		[Test, ExpectedMessage(@"Expected:
+	value == 2
+
+Actual:
+	value = 1")]
+		public void TestContextDuplicateCapturedActualVariable()
+		{
+			var value = 1;
+			using var d = AssertEx.Context(() => value);
+			AssertEx.IsTrue(() => value == 2);
+		}
+
+		[Test]
+		public void TestContextDuplicateCapturedContextVariable()
+		{
+			var value = 1;
+			using var d = AssertEx.Context(() => value);
+			using var e = AssertEx.Context(() => value);
+
+			AssertHasContext(@"value = 1");
+		}
+
+		[Test]
+		public void TestContextConstant()
+		{
+			// This is a bit silly; test is more to document the silly rather than preserve it.
+			const int value = 1;
+			using var d = AssertEx.Context(() => value);
+
+			AssertHasContext(@"1 = 1");
+		}
+
+		[Test]
+		public async Task TestContextAsyncLocal()
+		{
+			var value = 1;
+			using var d = AssertEx.Context(() => value);
+
+			await Task.WhenAll(
+				Task.Run(
+					() =>
+					{
+						var firstTask = 1;
+						using var e = AssertEx.Context(() => firstTask);
+						AssertHasContext(@"firstTask = 1
+	value = 1");
+					}),
+				Task.Run(
+					() =>
+					{
+						var secondTask = 1;
+						using var e = AssertEx.Context(() => secondTask);
+						AssertHasContext(@"secondTask = 1
+	value = 1");
+					}));
+
+			AssertHasContext(@"value = 1");
+		}
+
 		private static void AssertHasNoContext()
 		{
-			var assertion = Assert.Throws<AssertionException>(() => AssertEx.Assert(() => false));
+			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
 			var expectedMessage = @"Expected:
 	false";
 			Assert.AreEqual(expectedMessage, assertion.Message, assertion.Message);
@@ -77,33 +165,27 @@ namespace Faithlife.Testing.Tests.UnitTests
 
 		private static void AssertHasContext(string expectedContext)
 		{
-			var assertion = Assert.Throws<AssertionException>(() => AssertEx.Assert(() => false));
-			var expectedMessage = @"Expected:
+			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
+			new ExpectedMessageAttribute(@$"Expected:
 	false
 
 Context:
-	";
-			Assert.LessOrEqual(expectedMessage.Length, assertion.Message.Length, assertion.Message);
-			Assert.AreEqual(expectedMessage, assertion.Message.Substring(0, expectedMessage.Length), assertion.Message);
-			Assert.AreNotEqual(expectedMessage.Length, assertion.Message.Length, "Expected Context, got: " + expectedMessage);
-			Assert.AreEqual(expectedContext, assertion.Message.Substring(expectedMessage.Length), assertion.Message);
+	{expectedContext}", expectStackTrace: false)
+				.AssertMessageIsExpected(assertion.Message);
 		}
 
-		private static void AssertHasContext(Func<AssertEx.Builder<object>, AssertEx.Builder<object>> addContext, string expectedContext)
+		private static void AssertHasContext(Func<Assertable<object>, Assertable<object>> addContext, string expectedContext)
 		{
-			var builder = AssertEx.Select(new object());
+			var builder = AssertEx.HasValue(new object());
 			builder = addContext(builder);
 
-			var assertion = Assert.Throws<AssertionException>(() => builder.Assert(o => false));
-			var expectedMessage = @"Expected:
+			var assertion = Assert.Throws<AssertionException>(() => builder.IsTrue(o => false));
+			new ExpectedMessageAttribute(@$"Expected:
 	false
 
 Context:
-	";
-			Assert.LessOrEqual(expectedMessage.Length, assertion.Message.Length, assertion.Message);
-			Assert.AreEqual(expectedMessage, assertion.Message.Substring(0, expectedMessage.Length), assertion.Message);
-			Assert.AreNotEqual(expectedMessage.Length, assertion.Message.Length, "Expected Context, got: " + expectedMessage);
-			Assert.AreEqual(expectedContext, assertion.Message.Substring(expectedMessage.Length), assertion.Message);
+	{expectedContext}", expectStackTrace: false)
+				.AssertMessageIsExpected(assertion.Message);
 		}
 	}
 }

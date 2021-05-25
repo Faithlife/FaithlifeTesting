@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Faithlife.Testing</RootNamespace>
+    <Description>Faithlife.Testing.WebRequests class library.</Description>
+    <PackageTags></PackageTags>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Faithlife.Json" Version="0.7.0" />
+    <PackageReference Include="Faithlife.Reflection" Version="1.1.0" />
+    <PackageReference Include="Faithlife.WebRequests" Version="0.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Faithlife.Testing\Faithlife.Testing.csproj" />
+  </ItemGroup>
+
+</Project>
