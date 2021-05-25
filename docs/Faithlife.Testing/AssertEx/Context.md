@@ -1,5 +1,7 @@
 # AssertEx.Context method (1 of 6)
 
+Adds informational context to all assertions made within the `IDisposable` scope.
+
 ```csharp
 public static IDisposable Context(params Expression<Func<object>>[] contextExpressions)
 ```
@@ -12,6 +14,8 @@ public static IDisposable Context(params Expression<Func<object>>[] contextExpre
 ---
 
 # AssertEx.Context method (2 of 6)
+
+Adds informational context to all assertions made within the `IDisposable` scope.
 
 ```csharp
 public static IDisposable Context(IEnumerable<ValueTuple<string, object>> context)
@@ -26,6 +30,8 @@ public static IDisposable Context(IEnumerable<ValueTuple<string, object>> contex
 
 # AssertEx.Context method (3 of 6)
 
+Adds informational context to all assertions made within the `IDisposable` scope.
+
 ```csharp
 public static IDisposable Context(object context)
 ```
@@ -38,6 +44,8 @@ public static IDisposable Context(object context)
 ---
 
 # AssertEx.Context method (4 of 6)
+
+Adds informational context to all assertions made within the `IDisposable` scope.
 
 ```csharp
 public static IDisposable Context(string name, object value)
@@ -52,6 +60,8 @@ public static IDisposable Context(string name, object value)
 
 # AssertEx.Context method (5 of 6)
 
+Adds informational context to all assertions made within the `IDisposable` scope.
+
 ```csharp
 public static IDisposable Context(ValueTuple<string, object> first, 
     params ValueTuple<string, object>[] rest)
@@ -65,6 +75,8 @@ public static IDisposable Context(ValueTuple<string, object> first,
 ---
 
 # AssertEx.Context&lt;TValue&gt; method (6 of 6)
+
+Adds informational context to all assertions made within the `IDisposable` scope.
 
 ```csharp
 public static IDisposable Context<TValue>(IReadOnlyDictionary<string, TValue> data)

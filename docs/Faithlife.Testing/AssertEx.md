@@ -1,5 +1,7 @@
 # AssertEx class
 
+Helper for writing assertions using expression trees.
+
 ```csharp
 public static class AssertEx
 ```
@@ -8,13 +10,15 @@ public static class AssertEx
 
 | name | description |
 | --- | --- |
-| static [Assert](AssertEx/Assert.md)(…) |  |
-| static [Assert&lt;T1&gt;](AssertEx/Assert.md)(…) |  |
-| static [Context](AssertEx/Context.md)(…) |  (5 methods) |
-| static [Context&lt;TValue&gt;](AssertEx/Context.md)(…) |  |
-| static [Select&lt;T&gt;](AssertEx/Select.md)(…) |  (3 methods) |
-| static [Select&lt;T1,T2&gt;](AssertEx/Select.md)(…) |  (2 methods) |
-| class [Builder&lt;T1&gt;](AssertEx.Builder-1.md) |  |
+| static [Context](AssertEx/Context.md)(…) | Adds informational context to all assertions made within the `IDisposable` scope. (5 methods) |
+| static [Context&lt;TValue&gt;](AssertEx/Context.md)(…) | Adds informational context to all assertions made within the `IDisposable` scope. |
+| static [DoesNotThrow](AssertEx/DoesNotThrow.md)(…) | Asserts that *assertionExpression* does not throw an exception. |
+| static [DoesNotThrow&lt;T&gt;](AssertEx/DoesNotThrow.md)(…) | Asserts that *assertionExpression* does not throw an exception and allows chaining further asserts on the current value. |
+| static [HasValue&lt;T&gt;](AssertEx/HasValue.md)(…) | Starts a chain of assertions on *value*. Asserts that *value* is not `null`. (3 methods) |
+| static [HasValue&lt;T1,T2&gt;](AssertEx/HasValue.md)(…) | Asserts that *mapExpression* does not return `null` and allows chaining further asserts on that *T2* value. (2 methods) |
+| static [IsTrue](AssertEx/IsTrue.md)(…) | Asserts that *predicateExpression* returns `true`. |
+| static [IsTrue&lt;T&gt;](AssertEx/IsTrue.md)(…) | Asserts that *predicateExpression* does not return `false` and allows chaining further asserts on the current value. |
+| static [WaitUntil&lt;T&gt;](AssertEx/WaitUntil.md)(…) | Retries *action* until all assertions chained after this method pass. (2 methods) |
 
 ## See Also
 

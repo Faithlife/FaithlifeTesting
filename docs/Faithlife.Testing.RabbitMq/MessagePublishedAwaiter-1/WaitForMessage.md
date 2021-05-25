@@ -1,7 +1,7 @@
 # MessagePublishedAwaiter&lt;TMessage&gt;.WaitForMessage method
 
 ```csharp
-public LazyTask<Builder<TMessage>> WaitForMessage(
+public LazyTask<Assertable<TMessage>> WaitForMessage(
     Expression<Func<TMessage, bool>> predicateExpression)
 ```
 
