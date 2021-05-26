@@ -17,7 +17,7 @@
   * [`WaitUntil`](#waituntil)
 * [Limitations of Expressions](#limitations-of-expressions)
 
-## Endoresements
+## Endorsements
 
 "AssertEx is such a blessing, [...] it feels like a whole new world of possibilities has opened up to me."
 
