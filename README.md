@@ -102,7 +102,7 @@ With `Faithlife.Testing`, those problems go away!
     isFrobbable = false
  ```
 
-* There's no longe a need to use guard assertions so that you can know which property in a chain was the one that null.
+* There's no longer a need to use guard assertions so that you can know which property in a chain was the one that null.
 
  ```csharp
  var foo = new Foo
@@ -159,5 +159,5 @@ Because `Faithlife.Testing` is based around expressions, some newer C# language 
 
 These features include:
 
-* `async/await` - instead of using `async/await` in an expression, you can call a separate function to get an asyncrhonous value then make synchronous assertions on it.
+* `async/await` - instead of using `async/await` in an expression, you can call a separate function to get an asynchronous value then make synchronous assertions on it.
 * The `null`-coalescing operator -- instead of using the null-coalescing `?.` operator, just let the `NullReferenceException`s fly! `Faithlife.Testing` will tell you exactly what was `null`.
