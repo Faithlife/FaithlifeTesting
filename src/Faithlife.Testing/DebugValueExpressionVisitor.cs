@@ -427,7 +427,7 @@ namespace Faithlife.Testing
 					}
 				}
 
-				// Pop the top off our chain to find the source of the null value
+				// Pop the top off our chain to find the source of the `null` value
 				chain.RemoveAt(0);
 				name = chain.Select(c => c.Text).Reverse().Join("");
 			}
