@@ -561,6 +561,34 @@ Actual:
 				AssertEx.IsTrue(() => actual[i] == 1);
 		}
 
+		[Test, ExpectedMessage(@"Expected:
+	barDto.Foo != null
+
+Actual:
+	barDto.Foo = null
+	barDto = { ""text"": ""Foo is null."" }")]
+		public void TestNullProperty()
+		{
+			var barDto = new BarDto { Text = "Foo is null." };
+
+			AssertEx.IsTrue(() => barDto.Foo != null);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
+	barDto.Foo.Baz == 5
+
+Actual:
+	barDto.Foo = null
+	barDto = { ""text"": ""Foo is null."" }
+
+System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace: true)]
+		public void TestNullReferenceException()
+		{
+			var barDto = new BarDto { Text = "Foo is null." };
+
+			AssertEx.IsTrue(() => barDto.Foo.Baz == 5);
+		}
+
 		private sealed class FooDto
 		{
 			public string Id { get; set; }

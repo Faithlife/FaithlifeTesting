@@ -123,7 +123,7 @@ namespace Faithlife.Testing
 					&& mce.Method.DeclaringType == typeof(Enumerable)
 					&& mce.Arguments.Count == 2
 					&& ((isNegated && mce.Method.Name == "Any") || (!isNegated && mce.Method.Name == "All"))
-					&& TryExtractDebugValue(mce.Arguments[0], m_debugValues, out var expressionText))
+					&& TryExtractDebugValue(mce.Arguments[0], out var expressionText))
 				{
 					var sequence = (IEnumerable) Expression.Lambda(mce.Arguments[0]).Compile().DynamicInvoke();
 					var predicate = ((LambdaExpression) mce.Arguments[1]).Compile();
@@ -290,7 +290,7 @@ namespace Faithlife.Testing
 				return methodCall;
 			}
 
-			if (TryExtractDebugValue(methodCall, m_debugValues, out var expressionText))
+			if (TryExtractDebugValue(methodCall, out var expressionText))
 			{
 				Out(expressionText);
 
@@ -302,9 +302,9 @@ namespace Faithlife.Testing
 
 		protected override Expression VisitMember(MemberExpression member)
 		{
-			if (TryExtractDebugValue(member, m_debugValues, out var name))
+			if (TryExtractDebugValue(member, out var expressionText))
 			{
-				Out(name);
+				Out(expressionText);
 
 				return member;
 			}
@@ -314,7 +314,7 @@ namespace Faithlife.Testing
 
 		public IReadOnlyCollection<(string Name, object Value)> DebugValues => m_debugValues.Select(kvp => (kvp.Key, kvp.Value)).ToList().AsReadOnly();
 
-		private static bool TryExtractDebugValue(Expression expression, Dictionary<string, object> debugValues, out string expressionText)
+		private bool TryExtractDebugValue(Expression expression, out string expressionText)
 		{
 			// If there is a chain of member-access expressions ending in a value, display the value of the root property.
 			var current = expression;
@@ -375,8 +375,8 @@ namespace Faithlife.Testing
 
 						foreach (var (newName, newValue) in newDebugValues)
 						{
-							if (!debugValues.ContainsKey(newName))
-								debugValues[newName] = newValue;
+							if (!m_debugValues.ContainsKey(newName))
+								m_debugValues[newName] = newValue;
 						}
 					}
 
@@ -400,7 +400,7 @@ namespace Faithlife.Testing
 			while (true)
 			{
 				// Don't compile stuff we've already outpat
-				if (debugValues.ContainsKey(name))
+				if (m_debugValues.ContainsKey(name))
 					return true;
 
 				try
@@ -409,22 +409,25 @@ namespace Faithlife.Testing
 						? ce.Value
 						: Expression.Lambda(chain[0].Expression).Compile().DynamicInvoke();
 
-					debugValues.Add(name, value);
-					return true;
+					m_debugValues.Add(name, value);
+
+					// When we see a `null` value, try to also go one higher to explain *why* it was `null`.
+					if (value != null || chain.Count <= 1)
+						return true;
 				}
 				catch (Exception e)
 				{
 					while (e is TargetInvocationException { InnerException: { } } tie)
 						e = tie.InnerException;
 
-					if (e is not NullReferenceException || !chain.Any())
+					if (e is not NullReferenceException || chain.Count <= 1)
 					{
-						debugValues.Add(name, e);
+						m_debugValues.Add(name, e);
 						return true;
 					}
 				}
 
-				// Pop the top off our chain to find the source of the NRE
+				// Pop the top off our chain to find the source of the `null` value
 				chain.RemoveAt(0);
 				name = chain.Select(c => c.Text).Reverse().Join("");
 			}

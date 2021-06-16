@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.0.1
+
+* Patch: [#26](https://github.com/Faithlife/FaithlifeTesting/issues/26) Improve "actual" value display for `null` properties.
+
 ## 2.0.0
 
 * BREAKING: [#11](https://github.com/Faithlife/FaithlifeTesting/issues/11)
