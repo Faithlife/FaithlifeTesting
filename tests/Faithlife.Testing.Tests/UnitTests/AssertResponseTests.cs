@@ -42,6 +42,24 @@ Context:
 		}
 
 		[Test, ExpectedMessage(@"Expected:
+	response.OK != null
+
+Actual:
+	response.OK = null
+	response = { ""unauthorized"": true, ""wwwAuthenticate"": ""Testing realm=\""Narnia\"""" }
+
+Context:
+	response.Unauthorized = ""{ errorCode: 2 }""
+	response.WWWAuthenticate = ""Testing realm=""Narnia""""
+	request = ""GET http://example.com/ (status Unauthorized)""")]
+		public void TestWrongStatusBooleanProperty()
+		{
+			FooResponse.CreateUnauthorized()
+				.AssertResponse()
+				.HasValue(r => r.OK);
+		}
+
+		[Test, ExpectedMessage(@"Expected:
 	response.Bar == ""wrong""
 
 Actual:
