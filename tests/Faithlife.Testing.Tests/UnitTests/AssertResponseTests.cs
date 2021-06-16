@@ -20,9 +20,9 @@ namespace Faithlife.Testing.Tests.UnitTests
 		[Test]
 		public void TestSuccessBadRequest()
 		{
-			FooResponse.CreateBadRequest()
+			FooResponse.CreateUnauthorized()
 				.AssertResponse()
-				.IsTrue(r => r.BadRequest);
+				.IsTrue(r => r.Unauthorized);
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -30,9 +30,9 @@ namespace Faithlife.Testing.Tests.UnitTests
 
 Actual:
 	response.OK = null
+	response = { ""badRequest"": { ""errorCode"": 1 }, ""unauthorized"": false }
 
 Context:
-	response.BadRequest = ""{ errorCode: 1 }""
 	request = ""GET http://example.com/ (status BadRequest)""")]
 		public void TestWrongStatus()
 		{
@@ -124,9 +124,9 @@ Context:
 
 Actual:
 	response.OK = null
+	response = { ""badRequest"": { ""errorCode"": 1 }, ""unauthorized"": false }
 
 Context:
-	response.BadRequest = ""{ errorCode: 1 }""
 	request = ""GET http://example.com/ (status BadRequest)""
 
 System.NullReferenceException: Object reference not set to an instance of an object.", expectStackTrace: true)]
@@ -140,8 +140,8 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		private sealed class FooResponse : AutoWebServiceResponse
 		{
 			public static FooResponse CreateOK() => new(HttpStatusCode.OK, "{ id: 1, bar:\"baz\" }") { OK = new FooDto { Id = 1, Bar = "baz" } };
-			public static FooResponse CreateBadRequest() => new(HttpStatusCode.BadRequest, "{ errorCode: 1 }") { BadRequest = true };
-			public static FooResponse CreateUnauthorized() => new(HttpStatusCode.Unauthorized, "{ }")
+			public static FooResponse CreateBadRequest() => new(HttpStatusCode.BadRequest, "{ errorCode: 1 }") { BadRequest = new ErrorDto { ErrorCode = 1 } };
+			public static FooResponse CreateUnauthorized() => new(HttpStatusCode.Unauthorized, "{ errorCode: 2 }")
 			{
 				Unauthorized = true,
 				WWWAuthenticate = "Testing realm=\"Narnia\"",
@@ -161,7 +161,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 			}
 
 			public FooDto OK { get; private init; }
-			public bool BadRequest { get; private init; }
+			public ErrorDto BadRequest { get; private init; }
 			public bool Unauthorized { get; private init; }
 			public string WWWAuthenticate { get; set; }
 		}
@@ -170,6 +170,11 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			public int Id { get; set; }
 			public string Bar { get; set; }
+		}
+
+		private sealed class ErrorDto
+		{
+			public int ErrorCode { get; set; }
 		}
 	}
 }
