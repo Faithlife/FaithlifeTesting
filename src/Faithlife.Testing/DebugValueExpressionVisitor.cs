@@ -411,7 +411,7 @@ namespace Faithlife.Testing
 
 					m_debugValues.Add(name, value);
 
-					// When we see a `null` value, try to also go one higher to explain *why* it was null.
+					// When we see a `null` value, try to also go one higher to explain *why* it was `null`.
 					if (value != null || chain.Count <= 1)
 						return true;
 				}
