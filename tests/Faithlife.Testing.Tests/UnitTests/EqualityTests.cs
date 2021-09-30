@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace Faithlife.Testing.Tests.AssertEx
+namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture, Ignore("Not yet implemented")]
 	public sealed class EqualityTests
@@ -18,7 +18,7 @@ Actual:
 			int[] foo = { 1, 2, 3 };
 			int[] bar = { 1, 3, 2 };
 
-			Testing.AssertEx.IsTrue(() => foo == bar);
+			AssertEx.IsTrue(() => foo == bar);
 		}
 
 		[Test]
@@ -28,7 +28,7 @@ Actual:
 
 			// ReSharper disable once EqualExpressionComparison
 #pragma warning disable CS1718 // Comparison made to same variable
-			Testing.AssertEx.IsTrue(() => foo == foo);
+			AssertEx.IsTrue(() => foo == foo);
 #pragma warning restore CS1718 // Comparison made to same variable
 		}
 
@@ -38,7 +38,7 @@ Actual:
 			int[] foo = { 1, 2, 3 };
 			int[] bar = { 1, 2, 3 };
 
-			Testing.AssertEx.IsTrue(() => foo == bar);
+			AssertEx.IsTrue(() => foo == bar);
 		}
 
 		[Test]
@@ -47,9 +47,8 @@ Actual:
 			int[][] foo = { new[] { 1, 2, 3 }, new[] { 4, 5 } };
 			int[][] bar = { new[] { 1, 2, 3 }, new[] { 4, 5 } };
 
-			Testing.AssertEx.IsTrue(() => foo == bar);
+			AssertEx.IsTrue(() => foo == bar);
 		}
-
 		[Test]
 		public void TestMultidimentionalArrayEquality()
 		{
@@ -66,7 +65,7 @@ Actual:
 			};
 #pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
 
-			Testing.AssertEx.IsTrue(() => foo == bar);
+			AssertEx.IsTrue(() => foo == bar);
 		}
 
 		[Test]
@@ -76,7 +75,7 @@ Actual:
 			IEnumerable<int> bar = new List<int> { 1, 2, 3 };
 
 			// ReSharper disable once PossibleUnintendedReferenceComparison
-			Testing.AssertEx.IsTrue(() => foo == bar);
+			AssertEx.IsTrue(() => foo == bar);
 		}
 
 		[Test]
@@ -85,11 +84,10 @@ Actual:
 			IEnumerable<int> foo = new[] { 1, 2, 3 };
 			IEnumerable<int> bar = new List<int> { 1, 2, 3 };
 
-			Testing.AssertEx.IsTrue(() => Equals(foo, bar));
+			AssertEx.IsTrue(() => Equals(foo, bar));
 		}
 
-		[Test, ExpectedMessage(
-			@"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	ReferenceEquals(foo, bar)
 
 Actual:
@@ -100,7 +98,7 @@ Actual:
 			IEnumerable<int> foo = new[] { 1, 2, 3 };
 			IEnumerable<int> bar = new List<int> { 1, 2, 3 };
 
-			Testing.AssertEx.IsTrue(() => ReferenceEquals(foo, bar));
+			AssertEx.IsTrue(() => ReferenceEquals(foo, bar));
 		}
 	}
 }

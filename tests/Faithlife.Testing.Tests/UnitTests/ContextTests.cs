@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
-namespace Faithlife.Testing.Tests.AssertEx
+namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
 	public sealed class ContextTests
@@ -13,7 +13,7 @@ namespace Faithlife.Testing.Tests.AssertEx
 		{
 			AssertHasNoContext();
 
-			using (Testing.AssertEx.Context(new { foo = "bar" }))
+			using (AssertEx.Context(new { foo = "bar" }))
 				AssertHasContext("foo = \"bar\"");
 
 			AssertHasNoContext();
@@ -24,7 +24,7 @@ namespace Faithlife.Testing.Tests.AssertEx
 		{
 			AssertHasNoContext();
 
-			using (Testing.AssertEx.Context("foo", "bar"))
+			using (AssertEx.Context("foo", "bar"))
 				AssertHasContext("foo = \"bar\"");
 
 			AssertHasNoContext();
@@ -36,7 +36,7 @@ namespace Faithlife.Testing.Tests.AssertEx
 			AssertHasNoContext();
 
 			var foo = "bar";
-			using (Testing.AssertEx.Context(() => foo))
+			using (AssertEx.Context(() => foo))
 				AssertHasContext("foo = \"bar\"");
 
 			AssertHasNoContext();
@@ -47,7 +47,7 @@ namespace Faithlife.Testing.Tests.AssertEx
 		{
 			AssertHasNoContext();
 
-			using (Testing.AssertEx.Context(("foo", "bar")))
+			using (AssertEx.Context(("foo", "bar")))
 				AssertHasContext("foo = \"bar\"");
 
 			AssertHasNoContext();
@@ -56,7 +56,7 @@ namespace Faithlife.Testing.Tests.AssertEx
 		[Test]
 		public void NoContext()
 		{
-			using (Testing.AssertEx.Context(Enumerable.Empty<(string, object)>()))
+			using (AssertEx.Context(Enumerable.Empty<(string, object)>()))
 				AssertHasNoContext();
 		}
 
@@ -79,12 +79,11 @@ namespace Faithlife.Testing.Tests.AssertEx
 		[Test]
 		public void AssertableNoContext()
 		{
-			var builder = Testing.AssertEx.HasValue(new object())
+			var builder = AssertEx.HasValue(new object())
 				.Context(Enumerable.Empty<(string, object)>());
 
 			var assertion = Assert.Throws<AssertionException>(() => builder.IsTrue(o => false));
-			new ExpectedMessageAttribute(
-					@"Expected:
+			new ExpectedMessageAttribute(@"Expected:
 	false", expectStackTrace: false)
 				.AssertMessageIsExpected(assertion.Message);
 		}
@@ -93,12 +92,11 @@ namespace Faithlife.Testing.Tests.AssertEx
 		public void TestContextCapturedVariable()
 		{
 			var value = 1;
-			using var d = Testing.AssertEx.Context(() => value);
+			using var d = AssertEx.Context(() => value);
 			AssertHasContext(@"value = 1");
 		}
 
-		[Test, ExpectedMessage(
-			@"Expected:
+		[Test, ExpectedMessage(@"Expected:
 	value == 2
 
 Actual:
@@ -106,16 +104,16 @@ Actual:
 		public void TestContextDuplicateCapturedActualVariable()
 		{
 			var value = 1;
-			using var d = Testing.AssertEx.Context(() => value);
-			Testing.AssertEx.IsTrue(() => value == 2);
+			using var d = AssertEx.Context(() => value);
+			AssertEx.IsTrue(() => value == 2);
 		}
 
 		[Test]
 		public void TestContextDuplicateCapturedContextVariable()
 		{
 			var value = 1;
-			using var d = Testing.AssertEx.Context(() => value);
-			using var e = Testing.AssertEx.Context(() => value);
+			using var d = AssertEx.Context(() => value);
+			using var e = AssertEx.Context(() => value);
 
 			AssertHasContext(@"value = 1");
 		}
@@ -125,7 +123,7 @@ Actual:
 		{
 			// This is a bit silly; test is more to document the silly rather than preserve it.
 			const int value = 1;
-			using var d = Testing.AssertEx.Context(() => value);
+			using var d = AssertEx.Context(() => value);
 
 			AssertHasContext(@"1 = 1");
 		}
@@ -134,25 +132,23 @@ Actual:
 		public async Task TestContextAsyncLocal()
 		{
 			var value = 1;
-			using var d = Testing.AssertEx.Context(() => value);
+			using var d = AssertEx.Context(() => value);
 
 			await Task.WhenAll(
 				Task.Run(
 					() =>
 					{
 						var firstTask = 1;
-						using var e = Testing.AssertEx.Context(() => firstTask);
-						AssertHasContext(
-							@"firstTask = 1
+						using var e = AssertEx.Context(() => firstTask);
+						AssertHasContext(@"firstTask = 1
 	value = 1");
 					}),
 				Task.Run(
 					() =>
 					{
 						var secondTask = 1;
-						using var e = Testing.AssertEx.Context(() => secondTask);
-						AssertHasContext(
-							@"secondTask = 1
+						using var e = AssertEx.Context(() => secondTask);
+						AssertHasContext(@"secondTask = 1
 	value = 1");
 					}));
 
@@ -161,7 +157,7 @@ Actual:
 
 		private static void AssertHasNoContext()
 		{
-			var assertion = Assert.Throws<AssertionException>(() => Testing.AssertEx.IsTrue(() => false));
+			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
 			var expectedMessage = @"Expected:
 	false";
 			Assert.AreEqual(expectedMessage, assertion.Message, assertion.Message);
@@ -169,9 +165,8 @@ Actual:
 
 		private static void AssertHasContext(string expectedContext)
 		{
-			var assertion = Assert.Throws<AssertionException>(() => Testing.AssertEx.IsTrue(() => false));
-			new ExpectedMessageAttribute(
-					@$"Expected:
+			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
+			new ExpectedMessageAttribute(@$"Expected:
 	false
 
 Context:
@@ -181,12 +176,11 @@ Context:
 
 		private static void AssertHasContext(Func<Assertable<object>, Assertable<object>> addContext, string expectedContext)
 		{
-			var builder = Testing.AssertEx.HasValue(new object());
+			var builder = AssertEx.HasValue(new object());
 			builder = addContext(builder);
 
 			var assertion = Assert.Throws<AssertionException>(() => builder.IsTrue(o => false));
-			new ExpectedMessageAttribute(
-					@$"Expected:
+			new ExpectedMessageAttribute(@$"Expected:
 	false
 
 Context:

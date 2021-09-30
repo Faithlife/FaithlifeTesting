@@ -1,7 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 
-namespace Faithlife.Testing.Tests.AssertEx
+namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
 	public sealed class ImmutableStackTests
