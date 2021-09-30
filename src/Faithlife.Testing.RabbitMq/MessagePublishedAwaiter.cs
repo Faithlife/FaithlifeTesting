@@ -1,17 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
-using Faithlife.Json;
-using RabbitMQ.Client;
-using RabbitMQ.Client.MessagePatterns;
 
 namespace Faithlife.Testing.RabbitMq
 {
+	/// <summary>
+	/// Utility for asserting that a message gets published.
+	///
+	/// Creates a new queue bound to the specified server, exchange, and routingKey;
+	/// waits for a message to be published matching a specified predicate;
+	/// and allows chaning further assertions on the matched message.
+	/// </summary>
 	public sealed class MessagePublishedAwaiter<TMessage> : IDisposable
 		where TMessage : class
 	{
@@ -22,38 +24,45 @@ namespace Faithlife.Testing.RabbitMq
 
 		public MessagePublishedAwaiter(string serverName, string exchangeName, string routingKeyName, TimeSpan timeout)
 		{
-			m_serverName = serverName;
-			m_exchangeName = exchangeName;
-			m_routingKeyName = routingKeyName;
 			m_timeout = timeout;
-
-			m_connection = new ConnectionFactory
+			m_context = new
 			{
-				HostName = m_serverName,
-				RequestedHeartbeat = 30,
-			}.CreateConnection();
-
-			m_model = m_connection.CreateModel();
+				exchange = $"http://{serverName}:15672/#/exchanges/%2f/{exchangeName}",
+				routingKey = routingKeyName,
+			};
 
 			var queueName = $"{exchangeName}_{routingKeyName}_awaiter_{Environment.MachineName}_{Guid.NewGuid():N}";
-			string queue = m_model.QueueDeclare(
-				queue: queueName,
-				durable: false,
-				exclusive: true,
-				autoDelete: true,
-				arguments: new Dictionary<string, object> { { "x-ha-policy", "all" } });
 
-#pragma warning disable CS0618 // Type or member is obsolete
-			m_subscription = new Subscription(m_model, queue, true);
-#pragma warning restore CS0618 // Type or member is obsolete
-			m_model.QueueBind(queue, exchangeName, routingKeyName);
+			m_rabbitMq = new RabbitMqWrapper(serverName, queueName, priority: 0, autoAck: true, onError: e => m_exception = e, setup: model =>
+			{
+				model.QueueDeclare(
+					queue: queueName,
+					durable: false,
+					exclusive: true,
+					autoDelete: true,
+					arguments: new Dictionary<string, object> { { "x-ha-policy", "all" } });
+
+				model.QueueBind(queueName, exchangeName, routingKeyName, null);
+			});
+
+			var messages = Channel.CreateUnbounded<string>();
+
+			m_messages = messages.Reader;
+
+			// Wait synchronously for the consumer to start before returning.
+			m_rabbitMq.StartConsumer(
+				consumerTag: null,
+				onReceived: (_, message) => messages.Writer.TryWrite(message),
+				onCancelled: () => { })
+				.GetAwaiter()
+				.GetResult();
 
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
 		public LazyTask<Assertable<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
 		{
-			var awaiter = new Awaiter(predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression)));
+			var awaiter = new MessageAwaiter<TMessage>(m_context, predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression)));
 
 			lock (m_lock)
 			{
@@ -73,24 +82,13 @@ namespace Faithlife.Testing.RabbitMq
 				lock (m_lock)
 					m_awaiters.Remove(awaiter);
 
-				if (!result.IsCompleted)
-				{
-					var messageCount = awaiter.MessageCount;
-					var messages = awaiter.Messages;
-					var exchange = $"http://{m_serverName}:15672/#/exchanges/%2f/{m_exchangeName}";
+				if (result.IsCompleted)
+					return result.Result;
 
-					using (AssertEx.Context(new { messageCount, delayMilliseconds = m_timeout.TotalMilliseconds, exchange, m_routingKeyName }))
-					{
-						var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
-						var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, predicateExpression);
+				using (AssertEx.Context(new { delayMilliseconds = m_timeout.TotalMilliseconds }))
+					awaiter.AssertTimeoutFailure();
 
-						AssertEx.HasValue(() => messages)
-							.HasValue(Expression.Lambda<Func<IReadOnlyCollection<TMessage>, TMessage>>(body, param));
-					}
-				}
-
-				var message = result.Result;
-				return AssertEx.HasValue(() => message);
+				throw new InvalidOperationException("Multiple Assertions not supported.");
 			});
 		}
 
@@ -106,29 +104,22 @@ namespace Faithlife.Testing.RabbitMq
 					awaiter.Completion.TrySetCanceled(m_cancellationTokenSource.Token);
 
 				m_cancellationTokenSource.Dispose();
-				((IDisposable) m_subscription).Dispose();
-				m_model.Dispose();
-				m_connection.Dispose();
+				m_rabbitMq.Dispose();
 			}
 		}
 
-		private void SubscriberLoop()
+		private async Task SubscriberLoop()
 		{
 			try
 			{
-				while (!m_cancellationTokenSource.Token.IsCancellationRequested)
+				while (!m_cancellationTokenSource.Token.IsCancellationRequested && (await m_messages.WaitToReadAsync(m_cancellationTokenSource.Token)))
 				{
-					if (m_subscription.Next(1000, out var result) && result != null && !(result.Body == null || result.Body.Length == 0))
+					while (m_messages.TryRead(out var body))
 					{
-						var message = JsonUtility.FromJson<TMessage>(Encoding.UTF8.GetString(result.Body), s_jsonInputSettings);
-
 						lock (m_lock)
 						{
-							foreach (var awaiter in m_awaiters)
-								awaiter.CheckMessage(message);
+							MessageAwaiter<TMessage>.FirstMatch(m_awaiters, body)?.Complete();
 						}
-
-						m_subscription.Ack(result);
 					}
 				}
 			}
@@ -138,63 +129,15 @@ namespace Faithlife.Testing.RabbitMq
 			}
 		}
 
-		private sealed class Awaiter
-		{
-			public Awaiter(Expression<Func<TMessage, bool>> predicateExpression)
-			{
-				m_predicate = predicateExpression.Compile();
-			}
-
-			public TaskCompletionSource<TMessage> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-			public int MessageCount { get; private set; }
-			public IReadOnlyCollection<TMessage> Messages => m_messages.AsReadOnly();
-
-			public void CheckMessage(TMessage message)
-			{
-				MessageCount++;
-
-				if (m_messages.Count < c_messageLimit)
-					m_messages.Add(message);
-
-				if (m_predicate(message))
-					Completion.TrySetResult(message);
-			}
-
-			private const int c_messageLimit = 10;
-
-			private readonly Func<TMessage, bool> m_predicate;
-			private readonly List<TMessage> m_messages = new(c_messageLimit);
-		}
-
-		private static readonly JsonSettings s_jsonInputSettings = new() { RejectsExtraProperties = false };
-
-		private static readonly MethodInfo s_first = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).Single(
-				m =>
-				{
-					var p = m.GetParameters();
-					return m.Name == "First"
-						&& p.Length == 2
-						&& p[0].ParameterType.IsGenericType
-						&& p[0].ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-						&& p[1].ParameterType.IsGenericType
-						&& p[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>);
-				});
-
 		private readonly object m_lock = new();
 		private readonly CancellationTokenSource m_cancellationTokenSource = new();
 
-		private readonly string m_serverName;
-		private readonly string m_exchangeName;
-		private readonly string m_routingKeyName;
 		private readonly TimeSpan m_timeout;
-		private readonly IConnection m_connection;
-		private readonly IModel m_model;
-#pragma warning disable CS0618 // Type or member is obsolete
-		private readonly Subscription m_subscription;
-#pragma warning restore CS0618 // Type or member is obsolete
+		private readonly IRabbitMqWrapper m_rabbitMq;
+		private readonly ChannelReader<string> m_messages;
+		private readonly object m_context;
 
-		private readonly List<Awaiter> m_awaiters = new();
+		private readonly List<MessageAwaiter<TMessage>> m_awaiters = new();
 		private Exception m_exception;
 	}
 }

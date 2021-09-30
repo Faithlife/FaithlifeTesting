@@ -4,7 +4,7 @@ using Faithlife.WebRequests;
 using Faithlife.WebRequests.Json;
 using NUnit.Framework;
 
-namespace Faithlife.Testing.Tests.UnitTests
+namespace Faithlife.Testing.Tests.AssertEx
 {
 	[TestFixture]
 	public sealed class AssertResponseTests
@@ -25,7 +25,8 @@ namespace Faithlife.Testing.Tests.UnitTests
 				.IsTrue(r => r.Unauthorized);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.OK != null
 
 Actual:
@@ -41,7 +42,8 @@ Context:
 				.HasValue(r => r.OK);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.OK != null
 
 Actual:
@@ -59,7 +61,8 @@ Context:
 				.HasValue(r => r.OK);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.Bar == ""wrong""
 
 Actual:
@@ -75,7 +78,8 @@ Context:
 				.IsTrue(r => r.Bar == "wrong" && r.Id == 1);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.Bar == ""wrong""
 
 Actual:
@@ -90,7 +94,8 @@ Context:
 				.IsTrue(r => r.OK.Bar == "wrong" && r.OK.Id == 1);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.OK.Id == 3
 
 Actual:
@@ -106,7 +111,8 @@ Context:
 				.IsTrue(r => r.WWWAuthenticate == null && r.OK.Id == 3);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.Id == 5
 
 Actual:
@@ -122,7 +128,8 @@ Context:
 				.IsTrue(r => r.OK.Id == 5);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.Bar == ""wrong""
 
 Actual:
@@ -137,7 +144,8 @@ Context:
 				.IsTrue(r => r.OK.Bar == "wrong");
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	response.OK.Bar == ""wrong""
 
 Actual:
@@ -159,6 +167,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 		{
 			public static FooResponse CreateOK() => new(HttpStatusCode.OK, "{ id: 1, bar:\"baz\" }") { OK = new FooDto { Id = 1, Bar = "baz" } };
 			public static FooResponse CreateBadRequest() => new(HttpStatusCode.BadRequest, "{ errorCode: 1 }") { BadRequest = new ErrorDto { ErrorCode = 1 } };
+
 			public static FooResponse CreateUnauthorized() => new(HttpStatusCode.Unauthorized, "{ errorCode: 2 }")
 			{
 				Unauthorized = true,
@@ -167,15 +176,17 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 
 			private FooResponse(HttpStatusCode status, string body)
 			{
-				OnResponseHandledCoreAsync(new WebServiceResponseHandlerInfo<FooResponse>(
-					new HttpResponseMessage
-					{
-						StatusCode = status,
-						Content = new StringContent(body),
-						RequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.com"),
-					},
-					default))
-					.GetAwaiter().GetResult();
+				OnResponseHandledCoreAsync(
+						new WebServiceResponseHandlerInfo<FooResponse>(
+							new HttpResponseMessage
+							{
+								StatusCode = status,
+								Content = new StringContent(body),
+								RequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.com"),
+							},
+							default))
+					.GetAwaiter()
+					.GetResult();
 			}
 
 			public FooDto OK { get; private init; }

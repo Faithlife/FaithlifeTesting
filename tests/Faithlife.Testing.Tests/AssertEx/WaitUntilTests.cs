@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
-namespace Faithlife.Testing.Tests.UnitTests
+namespace Faithlife.Testing.Tests.AssertEx
 {
 	[TestFixture]
 	public sealed class WaitUntilTests
@@ -11,7 +11,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public async Task TestSuccessFirstTry()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await Testing.AssertEx.WaitUntil(() => fooService.GetFooAsync())
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 1);
 		}
 
@@ -19,7 +19,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public async Task TestSuccessSecondTry()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await Testing.AssertEx.WaitUntil(() => fooService.GetFooAsync())
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 2);
 		}
 
@@ -27,12 +27,13 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public async Task TestSuccessSecondTrySmallTimeout()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await Testing.AssertEx.WaitUntil(() => fooService.GetFooAsync())
 				.WithTimeout(TimeSpan.FromMilliseconds(1))
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 2);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	value.TryCount == 3
 
 Actual:
@@ -44,7 +45,7 @@ Context:
 		public async Task TestFailThirdTrySmallTimeout()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await Testing.AssertEx.WaitUntil(() => fooService.GetFooAsync())
 				.WithTimeout(TimeSpan.FromMilliseconds(1))
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 3);
 		}
@@ -55,12 +56,12 @@ Context:
 			var fooService = new FooService();
 
 			await Task.WhenAll(
-				AssertEx.WaitUntil(() => fooService.GetFooAsync())
+				Testing.AssertEx.WaitUntil(() => fooService.GetFooAsync())
 					.IsTrue(f => f.Bar == "bar"),
-				AssertEx.WaitUntil(() => fooService.GetFooAsync())
+				Testing.AssertEx.WaitUntil(() => fooService.GetFooAsync())
 					.IsTrue(f => f.Bar == "bar"));
 
-			AssertEx.IsTrue(() => fooService.TryCount == 2);
+			Testing.AssertEx.IsTrue(() => fooService.TryCount == 2);
 		}
 
 		private sealed class FooService
@@ -68,11 +69,12 @@ Context:
 			public Task<FooDto> GetFooAsync()
 			{
 				TryCount++;
-				return Task.FromResult(new FooDto
-				{
-					Bar = "bar",
-					TryCount = TryCount,
-				});
+				return Task.FromResult(
+					new FooDto
+					{
+						Bar = "bar",
+						TryCount = TryCount,
+					});
 			}
 
 			public int TryCount { get; private set; }

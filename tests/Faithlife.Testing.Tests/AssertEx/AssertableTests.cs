@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace Faithlife.Testing.Tests.UnitTests
+namespace Faithlife.Testing.Tests.AssertEx
 {
 	[TestFixture]
 	public sealed class AssertableTests
@@ -8,32 +8,33 @@ namespace Faithlife.Testing.Tests.UnitTests
 		[Test]
 		public void IsTrueSuccess()
 		{
-			AssertEx.HasValue("foo")
+			Testing.AssertEx.HasValue("foo")
 				.IsTrue(v => v == "foo");
 		}
 
 		[Test]
 		public void IsTrueExpressionSuccess()
 		{
-			AssertEx.HasValue(() => "foo")
+			Testing.AssertEx.HasValue(() => "foo")
 				.IsTrue(v => v == "foo");
 		}
 
 		[Test]
 		public void DoesNotThrowSuccess()
 		{
-			AssertEx.HasValue("foo")
+			Testing.AssertEx.HasValue("foo")
 				.DoesNotThrow(v => NoOp());
 		}
 
 		[Test]
 		public void HasValueEnumSuccess()
 		{
-			AssertEx.HasValue("foo")
+			Testing.AssertEx.HasValue("foo")
 				.HasValue(v => (int?) v.Length);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	foo != null
 
 Actual:
@@ -41,39 +42,43 @@ Actual:
 		public void TestHasValueExpression()
 		{
 			string foo = null;
-			AssertEx.HasValue(() => foo);
+			Testing.AssertEx.HasValue(() => foo);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	foo != null
 
 Actual:
 	foo = null")]
 		public void TestHasValueNamed()
 		{
-			AssertEx.HasValue<string>(null, "foo");
+			Testing.AssertEx.HasValue<string>(null, "foo");
 		}
 
 		private static void NoOp()
 		{
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, ExpectedMessage(
+			@"Expected:
 	foo != null
 
 Actual:
 	foo = null")]
 		public void AssertMultipleNoop()
 		{
-			Assert.Multiple(() =>
-			{
-				string foo = null;
-				AssertEx.HasValue(() => foo)
-					.IsTrue(a => a.Length == 5);
-			});
+			Assert.Multiple(
+				() =>
+				{
+					string foo = null;
+					Testing.AssertEx.HasValue(() => foo)
+						.IsTrue(a => a.Length == 5);
+				});
 		}
 
-		[Test, ExpectedMessage(@"Multiple failures or warnings in test:
+		[Test, ExpectedMessage(
+			@"Multiple failures or warnings in test:
   1) Expected:
 	foo.Length == 5
 
@@ -87,13 +92,14 @@ Actual:
 ")]
 		public void AssertMultiple()
 		{
-			Assert.Multiple(() =>
-			{
-				var foo = "bar";
-				AssertEx.HasValue(() => foo)
-					.IsTrue(a => a.Length == 5)
-					.IsTrue(a => a.Length == 4);
-			});
+			Assert.Multiple(
+				() =>
+				{
+					var foo = "bar";
+					Testing.AssertEx.HasValue(() => foo)
+						.IsTrue(a => a.Length == 5)
+						.IsTrue(a => a.Length == 4);
+				});
 		}
 
 		[Test]
@@ -101,7 +107,7 @@ Actual:
 		{
 			var fooBar = "foo";
 
-			var assertion = AssertEx.HasValue(() => fooBar)
+			var assertion = Testing.AssertEx.HasValue(() => fooBar)
 				.IsTrue(a => a == "foo");
 
 			// NOTE: the `.IsTrue(a => a == "foo")` expression above is **not** re-evaluated.
