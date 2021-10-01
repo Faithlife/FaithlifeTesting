@@ -35,7 +35,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		{
 			const string message = "Failure to obtain distributed lock";
 
-			var setup = GivenSetup(_ => throw new InvalidOperationException(message));
+			var setup = GivenSetup(processMessage: _ => throw new InvalidOperationException(message));
 
 			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
@@ -155,7 +155,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestNoMessages([Values] bool? isPublishedBeforeWaitForMessage)
 		{
-			var setup = GivenSetup();
+			var setup = GivenSetup(shortTimeout: true);
 
 			if (isPublishedBeforeWaitForMessage == true)
 				setup.PublishMessage("{ id: 1, bar: \"baz\" }");
@@ -194,7 +194,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMismatchedMessage()
 		{
-			var setup = GivenSetup();
+			var setup = GivenSetup(shortTimeout: true);
 
 			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
@@ -228,7 +228,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMalformedMessage()
 		{
-			var setup = GivenSetup();
+			var setup = GivenSetup(shortTimeout: true);
 
 			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
@@ -263,7 +263,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestConsumerTimeout()
 		{
-			var setup = GivenSetup();
+			var setup = GivenSetup(shortTimeout: true);
 
 			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
 
@@ -301,7 +301,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			mock.VerifyNoOtherCalls();
 		}
 
-		private static Setup GivenSetup(Action<FooDto> processMessage = null)
+		private static Setup GivenSetup(bool shortTimeout = false, Action<FooDto> processMessage = null)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();
 			TaskCompletionSource<object> tcs = null;
@@ -355,7 +355,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 						processMessage?.Invoke(m);
 						return Task.CompletedTask;
 					},
-					new MessageProcessedSettings { TimeoutMilliseconds = 50 },
+					new MessageProcessedSettings { TimeoutMilliseconds = shortTimeout ? 50 : 5_000 },
 					new LockingWrapper(mock.Object)),
 				Verify = async verify =>
 				{
