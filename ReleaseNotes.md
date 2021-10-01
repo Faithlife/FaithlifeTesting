@@ -1,5 +1,10 @@
 # Release Notes
 
+## 2.1.0
+
+* Minor: Add a `MessageProcessedAwaiter` for waiting on existing-queue messages.
+* Patch: Fix bug in `MessagePublishedAwaiter` which would allow messages to be lost if they were published before the consumer started.
+
 ## 2.0.1
 
 * Patch: [#26](https://github.com/Faithlife/FaithlifeTesting/issues/26) Improve "actual" value display for `null` properties.
