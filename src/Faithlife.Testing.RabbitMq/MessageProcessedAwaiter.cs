@@ -19,8 +19,6 @@ namespace Faithlife.Testing.RabbitMq
 	public sealed class MessageProcessedAwaiter<TMessage> : IDisposable
 		where TMessage : class
 	{
-		private const string c_timeoutreason = "timeoutReason";
-
 		public MessageProcessedAwaiter(string serverName, string queueName, Func<TMessage, Task> processMessage, MessageProcessedSettings settings = null)
 		{
 			m_context = new { queue = $"http://{serverName}:15672/#/queues/%2f/{queueName}" };
@@ -90,7 +88,7 @@ namespace Faithlife.Testing.RabbitMq
 					? AssertEx.Context(new { prefetchCount = m_settings.PrefetchCount, m_lastObservedDeliveryTag })
 					: null;
 
-				using (AssertEx.Context(c_timeoutreason, "after `await`"))
+				using (AssertEx.Context(c_timeoutReason, "after `await`"))
 					awaiter.AssertTimeoutFailure(m_settings.TimeoutMilliseconds);
 
 				throw new InvalidOperationException("Multiple Assertions not supported here.");
@@ -305,7 +303,7 @@ namespace Faithlife.Testing.RabbitMq
 							m_awaiters.Clear();
 						}
 
-						using (AssertEx.Context(c_timeoutreason, "unacked message"))
+						using (AssertEx.Context(c_timeoutReason, "unacked message"))
 						{
 							foreach (var awaiter in awaiters)
 							{
@@ -512,6 +510,8 @@ namespace Faithlife.Testing.RabbitMq
 			private readonly TaskCompletionSource<object> m_complete = new(TaskCreationOptions.RunContinuationsAsynchronously);
 			private readonly TaskCompletionSource<object> m_started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 		}
+
+		private const string c_timeoutReason = "timeoutReason";
 
 		private readonly object m_lock = new();
 		private readonly object m_context;
