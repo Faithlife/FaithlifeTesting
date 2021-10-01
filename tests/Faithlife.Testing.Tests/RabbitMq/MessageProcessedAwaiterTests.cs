@@ -67,9 +67,9 @@ namespace Faithlife.Testing.Tests.RabbitMq
 
 			await setup.Verify(mock =>
 			{
-				mock.Verify(r => r.BasicNack(2ul, true));
+				mock.Verify(r => r.BasicNack(It.IsIn(2ul, 4ul), It.IsAny<bool>()));
 				mock.Verify(r => r.BasicAck(3ul));
-				mock.Verify(r => r.BasicNack(4ul, false));
+				mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
 			});
 		}
 
