@@ -189,7 +189,7 @@ Context:
 	timeout = ""50 milliseconds""
 	messageCount = 1
 	context = ""present""
-	timeoutReason = ""after `await`""
+	timeoutReason = ""unacked message""
 
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMismatchedMessage()
@@ -200,14 +200,16 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			setup.PublishMessage("{ id: 2, bar: \"baz\" }");
 
+			// necessary to ensure we hit the "consumer timeout" message not the "awaiter timeout" message,
+			// just so the error message is consistent.
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+
 			try
 			{
 				await messageProcessed;
 			}
 			finally
 			{
-				await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
-
 				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
 		}

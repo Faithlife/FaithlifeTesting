@@ -64,7 +64,7 @@ namespace Faithlife.Testing.RabbitMq
 				m_model.BasicConsume(
 					m_queueName,
 					autoAck: m_autoAck,
-					consumerTag: consumerTag,
+					consumerTag: consumerTag ?? "",
 					arguments: new Dictionary<string, object>
 					{
 						{ Headers.XPriority, m_priority },
