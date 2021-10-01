@@ -5,7 +5,7 @@ using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
 
-namespace Faithlife.Testing.Tests.UnitTests
+namespace Faithlife.Testing.Tests
 {
 	/// <summary>
 	/// Specifies that a test method should be rerun on failure up to the specified maximum number of times.

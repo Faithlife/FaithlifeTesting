@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
-using Faithlife.Testing.Tests.AssertEx;
 using Moq;
 using NUnit.Framework;
 
@@ -15,7 +14,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		[Test]
 		public async Task TestMessageSuccess()
 		{
-			var (awaiter, processedMessages, mock) = GivenMessages("{ id: 1, bar: \"baz\" }");
+			var (awaiter, processedMessages, verify) = GivenMessages("{ id: 1, bar: \"baz\" }");
 
 			var assertableMessage = await awaiter
 				.WaitForMessage(m => m.Id == 1);
@@ -25,10 +24,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				&& m.Bar == "baz"
 				&& m == processedMessages.Single());
 
-			mock.Verify(r => r.BasicAck(1ul));
-
-			mock.Verify();
-			mock.VerifyNoOtherCalls();
+			await verify(mock => mock.Verify(r => r.BasicAck(1ul)));
 		}
 
 		[Test]
@@ -36,9 +32,9 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		{
 			const string message = "Failure to obtain distributed lock";
 
-			var (awaiter, _, mock) = GivenSetup(
+			var (awaiter, _, verify) = GivenSetup(
 				new[] { "{ id: 1, bar: \"baz\" }" },
-				m => throw new InvalidOperationException(message));
+				_ => throw new InvalidOperationException(message));
 
 			var messageProcessed = awaiter
 				.WaitForMessage(m => m.Id == 1);
@@ -56,18 +52,15 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			}
 
 			// Throws an AggregateException when run as a test suite, but InvalidOperationException when run by itself.
-			Testing.AssertEx.IsTrue(() => exception.Message.Contains(message, StringComparison.InvariantCulture));
+			AssertEx.IsTrue(() => exception.Message.Contains(message, StringComparison.InvariantCulture));
 
-			mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>()));
-
-			mock.Verify();
-			mock.VerifyNoOtherCalls();
+			await verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
 		}
 
 		[Test]
 		public async Task TestNacking()
 		{
-			var (awaiter, processedMessages, mock) = GivenMessages(
+			var (awaiter, processedMessages, verify) = GivenMessages(
 				"{ id: 1, bar: \"baz\" }",
 				"{ id: 2, bar: \"baz\" }",
 				"{ id: 3, bar: \"baz\" }",
@@ -80,12 +73,13 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				m.Id == 3
 				&& m == processedMessages.Single());
 
-			mock.Verify(r => r.BasicNack(2ul, true));
-			mock.Verify(r => r.BasicAck(3ul));
-			mock.Verify(r => r.BasicNack(4ul, false));
-
-			mock.Verify();
-			mock.VerifyNoOtherCalls();
+			await verify(
+				mock =>
+				{
+					mock.Verify(r => r.BasicNack(2ul, true));
+					mock.Verify(r => r.BasicAck(3ul));
+					mock.Verify(r => r.BasicNack(4ul, false));
+				});
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -102,7 +96,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestNoMessages()
 		{
-			var (awaiter, processedMessages, mock) = GivenMessages();
+			var (awaiter, processedMessages, verify) = GivenMessages();
 
 			var messageProcessed = awaiter.WaitForMessage(m => m.Id == 1);
 
@@ -112,10 +106,9 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				Testing.AssertEx.IsTrue(() => !processedMessages.Any());
+				AssertEx.IsTrue(() => !processedMessages.Any());
 
-				mock.Verify();
-				mock.VerifyNoOtherCalls();
+				await verify(_ => { });
 			}
 		}
 
@@ -133,7 +126,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMismatchedMessage()
 		{
-			var (awaiter, processedMessages, mock) = GivenMessages("{ id: 2, bar: \"baz\" }");
+			var (awaiter, processedMessages, verify) = GivenMessages("{ id: 2, bar: \"baz\" }");
 
 			var messageProcessed = awaiter.WaitForMessage(m => m.Id == 1);
 
@@ -143,12 +136,9 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				Testing.AssertEx.IsTrue(() => !processedMessages.Any());
+				AssertEx.IsTrue(() => !processedMessages.Any());
 
-				mock.Verify(r => r.BasicNack(1ul, true));
-
-				mock.Verify();
-				mock.VerifyNoOtherCalls();
+				await verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
 			}
 		}
 
@@ -167,7 +157,7 @@ Context:
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMalformedMessage()
 		{
-			var (awaiter, processedMessages, mock) = GivenMessages("garbage");
+			var (awaiter, processedMessages, verify) = GivenMessages("garbage");
 
 			var messageProcessed = awaiter.WaitForMessage(m => m.Id == 1);
 
@@ -177,26 +167,30 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				Testing.AssertEx.IsTrue(() => !processedMessages.Any());
+				AssertEx.IsTrue(() => !processedMessages.Any());
 
-				mock.Verify(r => r.BasicNack(1ul, true));
-
-				mock.Verify();
-				mock.VerifyNoOtherCalls();
+				await verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
 			}
 		}
 
-		private static (MessageProcessedAwaiter<FooDto> Awaiter, List<FooDto> ProcessedMessages, Mock<IRabbitMqWrapper> Mock) GivenMessages(params string[] messages)
+		private static (MessageProcessedAwaiter<FooDto> Awaiter, List<FooDto> ProcessedMessages, Func<Action<Mock<IRabbitMqWrapper>>, Task> Verify) GivenMessages(params string[] messages)
 			=> GivenSetup(messages, null);
 
-		private static (MessageProcessedAwaiter<FooDto> Awaiter, List<FooDto> ProcessedMessages, Mock<IRabbitMqWrapper> Mock) GivenSetup(IEnumerable<string> messages, Action<FooDto> processMessage = null)
+		private static (MessageProcessedAwaiter<FooDto> Awaiter, List<FooDto> ProcessedMessages, Func<Action<Mock<IRabbitMqWrapper>>, Task> Verify) GivenSetup(IEnumerable<string> messages, Action<FooDto> processMessage = null)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();
+			var tcs = new TaskCompletionSource<object>();
 			var deliveryTag = 0ul;
 
 			mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
-				.Callback<string, Action<ulong, string>, Action>(
-					(consumerTag, _, onClose) => mock.Setup(r => r.BasicCancel(consumerTag)).Callback(onClose).Verifiable())
+				.Callback<string, Action<ulong, string>, Action>((consumerTag, _, onClose) => mock
+					.Setup(r => r.BasicCancel(consumerTag))
+					.Callback(() =>
+					{
+						onClose();
+						tcs.TrySetResult(null);
+					})
+					.Verifiable())
 				.Returns(Task.CompletedTask)
 				.Callback<string, Action<ulong, string>, Action>(
 					(_, onRecieved, _) =>
@@ -215,10 +209,19 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 						processMessage?.Invoke(m);
 						return Task.CompletedTask;
 					},
-					new MessageProcessedSettings { TimeoutMilliseconds = 25 },
+					new MessageProcessedSettings { TimeoutMilliseconds = 50 },
 					mock.Object),
 				processedMessages,
-				mock);
+				async verify =>
+				{
+					await tcs.Task;
+
+					verify(mock);
+
+					mock.Verify();
+					mock.VerifyNoOtherCalls();
+				}
+			);
 		}
 
 		private sealed class FooDto
