@@ -85,8 +85,7 @@ namespace Faithlife.Testing.RabbitMq
 				if (result.IsCompleted)
 					return result.Result;
 
-				using (AssertEx.Context(new { delayMilliseconds = m_timeout.TotalMilliseconds }))
-					awaiter.AssertTimeoutFailure();
+				awaiter.AssertTimeoutFailure((int) m_timeout.TotalMilliseconds);
 
 				throw new InvalidOperationException("Multiple Assertions not supported.");
 			});

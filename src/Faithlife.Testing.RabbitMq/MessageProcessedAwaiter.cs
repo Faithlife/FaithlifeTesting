@@ -19,6 +19,8 @@ namespace Faithlife.Testing.RabbitMq
 	public sealed class MessageProcessedAwaiter<TMessage> : IDisposable
 		where TMessage : class
 	{
+		private const string c_timeoutreason = "timeoutReason";
+
 		public MessageProcessedAwaiter(string serverName, string queueName, Func<TMessage, Task> processMessage, MessageProcessedSettings settings = null)
 		{
 			m_context = new { queue = $"http://{serverName}:15672/#/queues/%2f/{queueName}" };
@@ -60,7 +62,7 @@ namespace Faithlife.Testing.RabbitMq
 				await WithTimeout()(result);
 
 				if (result.IsCompleted)
-					return result.Result;
+					return await result;
 
 				bool shouldTimeOut;
 				lock (m_lock)
@@ -87,9 +89,9 @@ namespace Faithlife.Testing.RabbitMq
 				using var a = m_lastObservedDeliveryTag >= m_settings.PrefetchCount
 					? AssertEx.Context(new { prefetchCount = m_settings.PrefetchCount, m_lastObservedDeliveryTag })
 					: null;
-				using var b = AssertEx.Context(new { timeoutSeconds = m_settings.TimeoutMilliseconds / 1_000 });
 
-				awaiter.AssertTimeoutFailure();
+				using (AssertEx.Context(c_timeoutreason, "after `await`"))
+					awaiter.AssertTimeoutFailure(m_settings.TimeoutMilliseconds);
 
 				throw new InvalidOperationException("Multiple Assertions not supported here.");
 			});
@@ -151,7 +153,7 @@ namespace Faithlife.Testing.RabbitMq
 						await withTimeout(previousConsumerIsComplete);
 
 						if (!previousConsumerIsComplete.IsCompleted)
-							throw new OperationCanceledException($"Timeout waiting for previous consumer to complete after {m_settings.TimeoutMilliseconds / 1000} seconds.");
+							throw new OperationCanceledException($"Timeout waiting for previous consumer to complete after {MessageAwaiter<TMessage>.HumanReadable(m_settings.TimeoutMilliseconds)}.");
 					}
 
 					var messages = Channel.CreateUnbounded<(ulong, string)>();
@@ -233,7 +235,7 @@ namespace Faithlife.Testing.RabbitMq
 				if (startConsumer.IsCompleted)
 					consumerState.SetStarted();
 				else
-					throw new OperationCanceledException($"Timeout waiting for consumer to start after {m_settings.TimeoutMilliseconds / 1000} seconds.");
+					throw new OperationCanceledException($"Timeout waiting for consumer to start after {MessageAwaiter<TMessage>.HumanReadable(m_settings.TimeoutMilliseconds)}.");
 			}
 			catch (Exception e)
 			{
@@ -245,61 +247,88 @@ namespace Faithlife.Testing.RabbitMq
 		private async Task SubscribeAsync(ConsumerState consumer, ChannelReader<(ulong DeliveryTag, string Body)> messages)
 		{
 			CancellationTokenSource timeout = null;
+			var hasAwaiters = true;
+			var subscriberCancellation = consumer.ShouldStop;
 			try
 			{
-				var hasAwaiters = true;
-				var subscriberCancellation = consumer.ShouldStop;
-				try
+				while (hasAwaiters && !subscriberCancellation.IsCancellationRequested && await messages.WaitToReadAsync(subscriberCancellation))
 				{
-					while (hasAwaiters && !subscriberCancellation.IsCancellationRequested && await messages.WaitToReadAsync(subscriberCancellation))
+					while (hasAwaiters && messages.TryRead(out var item))
 					{
-						while (hasAwaiters && messages.TryRead(out var item))
+						MessageAwaiter<TMessage> awaiter;
+						lock (m_lock)
 						{
-							MessageAwaiter<TMessage> awaiter;
-							lock (m_lock)
-							{
-								awaiter = MessageAwaiter<TMessage>.FirstMatch(m_awaiters, item.Body);
-
-								if (awaiter != null)
-								{
-									m_explicitDeliveryTags.Add(item.DeliveryTag);
-									m_waitingDeliveryTags.Add(item.DeliveryTag);
-									m_awaiters.Remove(awaiter);
-								}
-
-								hasAwaiters = m_awaiters.Any();
-
-								if (!hasAwaiters)
-									consumer.Stop();
-							}
+							awaiter = MessageAwaiter<TMessage>.FirstMatch(m_awaiters, item.Body);
 
 							if (awaiter != null)
 							{
-								RunInBackground(() => CompleteAsync(awaiter, item.DeliveryTag));
+								m_explicitDeliveryTags.Add(item.DeliveryTag);
+								m_waitingDeliveryTags.Add(item.DeliveryTag);
+								m_awaiters.Remove(awaiter);
 							}
-							else if (hasAwaiters && timeout == null)
-							{
-								// Ensure this message waits no more than m_settings.TimeoutSeconds before we nack it.
-								// Can't just nack it now because RabbitMQ doesn't make the same guarantees the AMQP spec promises.
-								timeout = new CancellationTokenSource(m_settings.TimeoutMilliseconds);
-								subscriberCancellation = CancellationTokenSource.CreateLinkedTokenSource(consumer.ShouldStop, timeout.Token).Token;
-							}
+
+							hasAwaiters = m_awaiters.Any();
+
+							if (!hasAwaiters)
+								consumer.Stop();
+						}
+
+						if (awaiter != null)
+						{
+							RunInBackground(() => CompleteAsync(awaiter, item.DeliveryTag));
+						}
+						else if (hasAwaiters && timeout == null)
+						{
+							// Ensure this message waits no more than m_settings.TimeoutSeconds before we nack it.
+							// Can't just nack it now because RabbitMQ doesn't make the same guarantees the AMQP spec promises.
+							timeout = new CancellationTokenSource(m_settings.TimeoutMilliseconds);
+							subscriberCancellation = CancellationTokenSource.CreateLinkedTokenSource(consumer.ShouldStop, timeout.Token).Token;
 						}
 					}
 				}
-				catch (OperationCanceledException) when (consumer.ShouldStop.IsCancellationRequested)
-				{
-					// Cleanup our subscriber, the thing which cancelled us cleaned up the awaiters.
-				}
-				finally
-				{
-					// Cancel our consumer so that we can release all backed-up messages.
-					m_rabbitMq.BasicCancel(consumer.ConsumerTag);
-				}
+			}
+			catch (OperationCanceledException) when (subscriberCancellation.IsCancellationRequested)
+			{
+				// Just cleanup our subscriber
 			}
 			finally
 			{
-				timeout?.Dispose();
+				if (timeout != null)
+				{
+					if (timeout.IsCancellationRequested)
+					{
+						var awaiters = new List<MessageAwaiter<TMessage>>();
+						lock (m_lock)
+						{
+							consumer.Stop();
+							awaiters.AddRange(m_awaiters);
+							m_awaiters.Clear();
+						}
+
+						using (AssertEx.Context(c_timeoutreason, "unacked message"))
+						{
+							foreach (var awaiter in awaiters)
+							{
+								try
+								{
+									awaiter.AssertTimeoutFailure(m_settings.TimeoutMilliseconds);
+
+									// Handles the multiple-assertion case.
+									awaiter.Completion.TrySetCanceled(timeout.Token);
+								}
+								catch (Exception e)
+								{
+									awaiter.Completion.SetException(e);
+								}
+							}
+						}
+					}
+
+					timeout.Dispose();
+				}
+
+				// Cancel our consumer so that we can release all backed-up messages.
+				m_rabbitMq.BasicCancel(consumer.ConsumerTag);
 			}
 		}
 

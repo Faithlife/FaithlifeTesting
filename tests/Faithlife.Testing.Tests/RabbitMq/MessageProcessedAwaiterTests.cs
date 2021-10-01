@@ -14,19 +14,20 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		[Test]
 		public async Task TestMessageSuccess()
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
-			var messagePublished = awaiter
-				.WaitForMessage(m => m.Id == 1);
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
-			publishMessage("{ id: 1, bar: \"baz\" }");
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			(await messagePublished).IsTrue(m =>
+			var message = (await messageProcessed).IsTrue(m =>
 				m.Id == 1
-				&& m.Bar == "baz"
-				&& m == processedMessages.Single());
+				&& m.Bar == "baz")
+				.Value;
 
-			await verify(mock => mock.Verify(r => r.BasicAck(1ul)));
+			setup.ProcessedMessages.IsTrue(messages => messages.Single() == message);
+
+			await setup.Verify(mock => mock.Verify(r => r.BasicAck(1ul)));
 		}
 
 		[Test]
@@ -34,115 +35,98 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		{
 			const string message = "Failure to obtain distributed lock";
 
-			var (publishMessage, awaiter, _, verify) = GivenSetup(_ => throw new InvalidOperationException(message));
+			var setup = GivenSetup(_ => throw new InvalidOperationException(message));
 
-			var messageProcessed = awaiter
-				.WaitForMessage(m => m.Id == 1);
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
-			publishMessage("{ id: 1, bar: \"baz\" }");
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			Exception exception;
-			try
-			{
-				await messageProcessed;
+			var exception = Assert.ThrowsAsync<InvalidOperationException>(async () => await messageProcessed);
 
-				exception = null;
-			}
-			catch (Exception ex)
-			{
-				exception = ex;
-			}
-
-			// Throws an AggregateException when run as a test suite, but InvalidOperationException when run by itself.
 			AssertEx.IsTrue(() => exception.Message.Contains(message, StringComparison.InvariantCulture));
 
-			await verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
 		}
 
 		[Test]
 		public async Task TestNacking()
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
-			var messagePublished = awaiter
-				.WaitForMessage(m => m.Id == 3);
+			var messagePublished = setup.Awaiter.WaitForMessage(m => m.Id == 3);
 
-			publishMessage("{ id: 1, bar: \"baz\" }");
-			publishMessage("{ id: 2, bar: \"baz\" }");
-			publishMessage("{ id: 3, bar: \"baz\" }");
-			publishMessage("{ id: 4, bar: \"baz\" }");
+			setup.PublishMessages(
+				"{ id: 1, bar: \"baz\" }",
+				"{ id: 2, bar: \"baz\" }",
+				"{ id: 3, bar: \"baz\" }",
+				"{ id: 4, bar: \"baz\" }");
 
-			(await messagePublished).IsTrue(m =>
-				m.Id == 3
-				&& m == processedMessages.Single());
+			(await messagePublished).IsTrue(m => m.Id == 3);
 
-			await verify(
-				mock =>
-				{
-					mock.Verify(r => r.BasicNack(2ul, true));
-					mock.Verify(r => r.BasicAck(3ul));
-					mock.Verify(r => r.BasicNack(4ul, false));
-				});
+			setup.ProcessedMessages.IsTrue(m => m.Single().Id == 3);
+
+			await setup.Verify(mock =>
+			{
+				mock.Verify(r => r.BasicNack(2ul, true));
+				mock.Verify(r => r.BasicAck(3ul));
+				mock.Verify(r => r.BasicNack(4ul, false));
+			});
 		}
 
 		[Test]
 		public async Task TestOverlappingMessages()
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
-			var firstMessagePublished = awaiter
-				.WaitForMessage(m => m.Id == 1);
+			var firstMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
-			var thirdMessagePublished = awaiter
-				.WaitForMessage(m => m.Id == 3);
+			var thirdMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 3);
 
-			publishMessage("{ id: 1, bar: \"baz\" }");
+			setup.PublishMessages(
+				"{ id: 1, bar: \"baz\" }",
+				"{ id: 2, bar: \"baz\" }",
+				"{ id: 3, bar: \"baz\" }",
+				"{ id: 4, bar: \"baz\" }");
 
-			publishMessage("{ id: 2, bar: \"baz\" }");
+			await firstMessageProcessed;
+			await thirdMessageProcessed;
 
-			publishMessage("{ id: 3, bar: \"baz\" }");
+			setup.ProcessedMessages.IsTrue(messages =>
+				messages.Count == 2
+				&& messages.Any(m => m.Id == 1)
+				&& messages.Any(m => m.Id == 3));
 
-			publishMessage("{ id: 4, bar: \"baz\" }");
-
-			await firstMessagePublished;
-			await thirdMessagePublished;
-
-			AssertEx.IsTrue(() => processedMessages.Count == 2
-				&& processedMessages.Any(m => m.Id == 1)
-				&& processedMessages.Any(m => m.Id == 3));
-
-			await verify(
-				mock =>
-				{
-					mock.Verify(r => r.BasicAck(1ul));
-					mock.Verify(r => r.BasicNack(2ul, It.IsAny<bool>()));
-					mock.Verify(r => r.BasicAck(3ul));
-					mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
-				});
+			await setup.Verify(mock =>
+			{
+				mock.Verify(r => r.BasicAck(1ul));
+				mock.Verify(r => r.BasicAck(3ul));
+				mock.Verify(r => r.BasicNack(It.IsIn(2ul, 4ul), It.IsAny<bool>()));
+				mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
+			});
 		}
 
 		[Test]
 		public async Task TestSequentialAwaits()
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
-			var firstMessagePublished = awaiter
-				.WaitForMessage(m => m.Id == 1);
+			var firstMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
-			publishMessage("{ id: 1, bar: \"baz\" }");
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			await firstMessagePublished;
+			await firstMessageProcessed;
 
-			await verify(mock => mock.Verify(r => r.BasicAck(1ul)));
+			await setup.Verify(mock => mock.Verify(r => r.BasicAck(1ul)));
 
-			var secondMessagePublished = awaiter
-				.WaitForMessage(m => m.Id == 2);
+			setup.PublishMessage("{ id: -1, bar: \"unseen\" }");
 
-			publishMessage("{ id: 2, bar: \"baz\" }");
+			var secondMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
 
-			await secondMessagePublished;
+			setup.PublishMessage("{ id: 2, bar: \"baz\" }");
 
-			await verify(mock =>
+			await secondMessageProcessed;
+
+			await setup.Verify(mock =>
 			{
 				mock.Verify(r => r.BasicAck(2ul));
 
@@ -150,31 +134,33 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				mock.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Exactly(2));
 			});
 
-			AssertEx.IsTrue(() => processedMessages.Count == 2
-				&& processedMessages[0].Id == 1
-				&& processedMessages[1].Id == 2);
+			setup.ProcessedMessages.IsTrue(m =>
+				m.Count == 2
+				&& m[0].Id == 1
+				&& m[1].Id == 2);
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
 	messages = []
 
 Context:
+	timeout = ""50 milliseconds""
 	messageCount = 0
 	context = ""present""
-	timeoutSeconds = 0
+	timeoutReason = ""after `await`""
 
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestNoMessages([Values] bool? isPublishedBeforeWaitForMessage)
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
 			if (isPublishedBeforeWaitForMessage == true)
-				publishMessage("{ id: 1, bar: \"baz\" }");
+				setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			var messageProcessed = awaiter.WaitForMessage(m => m.Id == 1);
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
 			try
 			{
@@ -182,36 +168,37 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				await verify(
+				await setup.Verify(
 					_ =>
 					{
 						if (isPublishedBeforeWaitForMessage == false)
-							publishMessage("{ id: 1, bar: \"baz\" }");
+							setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 					});
 
-				AssertEx.IsTrue(() => !processedMessages.Any());
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
 	messages = [{ ""id"": 2, ""bar"": ""baz"" }]
 
 Context:
+	timeout = ""50 milliseconds""
 	messageCount = 1
 	context = ""present""
-	timeoutSeconds = 0
+	timeoutReason = ""after `await`""
 
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMismatchedMessage()
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
-			var messageProcessed = awaiter.WaitForMessage(m => m.Id == 1);
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
-			publishMessage("{ id: 2, bar: \"baz\" }");
+			setup.PublishMessage("{ id: 2, bar: \"baz\" }");
 
 			try
 			{
@@ -219,13 +206,13 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				AssertEx.IsTrue(() => !processedMessages.Any());
+				await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
 
-				await verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
 		}
 
-		[Test, ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -233,18 +220,23 @@ Actual:
 
 Context:
 	malformedMessages = [""garbage""]
+	timeout = ""50 milliseconds""
 	messageCount = 1
 	context = ""present""
-	timeoutSeconds = 0
+	timeoutReason = ""unacked message""
 
 System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
 		public async Task TestMalformedMessage()
 		{
-			var (publishMessage, awaiter, processedMessages, verify) = GivenSetup();
+			var setup = GivenSetup();
 
-			var messageProcessed = awaiter.WaitForMessage(m => m.Id == 1);
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
 
-			publishMessage("garbage");
+			setup.PublishMessage("garbage");
+
+			// necessary to ensure we hit the "consumer timeout" message not the "awaiter timeout" message,
+			// just so the error message is consistent.
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
 
 			try
 			{
@@ -252,18 +244,71 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				AssertEx.IsTrue(() => !processedMessages.Any());
-
-				await verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
 		}
 
-		private static (Action<string> PublishMessage, MessageProcessedAwaiter<FooDto> Awaiter, List<FooDto> ProcessedMessages, Func<Action<Mock<IRabbitMqWrapper>>, Task> Verify) GivenSetup(Action<FooDto> processMessage = null)
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+	messages.First(m => m.Id == 2)
+
+Actual:
+	messages = [{ ""id"": 1, ""bar"": ""baz"" }]
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 1
+	context = ""present""
+	timeoutReason = ""unacked message""
+
+System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
+		public async Task TestConsumerTimeout()
+		{
+			var setup = GivenSetup();
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
+
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+			// Wait until after the consumer shuts down.
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+
+			// Does nothing.
+			setup.PublishMessage("{ id: 2, bar: \"baz\" }");
+
+			try
+			{
+				await messageProcessed;
+			}
+			finally
+			{
+				await setup.Verify(_ => { });
+
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
+			}
+		}
+
+		[Test]
+		public void TestConstructorDoesNotCreateConsumer()
+		{
+			var mock = new Mock<IRabbitMqWrapper>();
+
+			var unused = new MessageProcessedAwaiter<FooDto>(
+				new { },
+				_ => Task.CompletedTask,
+				new MessageProcessedSettings(),
+				mock.Object);
+
+			mock.VerifyNoOtherCalls();
+		}
+
+		private static Setup GivenSetup(Action<FooDto> processMessage = null)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();
 			TaskCompletionSource<object> tcs = null;
 			var deliveryTag = 0ul;
 			Action<ulong, string> onRecievedWrapper = null;
+
+			var mutex = new object();
 			var processedMessages = new List<FooDto>();
 
 			mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
@@ -273,31 +318,46 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 					onRecievedWrapper = onRecieved;
 					mock
 						.Setup(r => r.BasicCancel(consumerTag))
-						.Callback(
-							() =>
+						.Callback(() =>
+						{
+							try
 							{
 								onClose();
 								tcs.TrySetResult(null);
-							})
+							}
+							catch (Exception e)
+							{
+								tcs.TrySetException(e);
+							}
+
+							onRecievedWrapper = null;
+						})
 						.Verifiable();
 				})
 				.Returns(Task.CompletedTask)
 				.Verifiable();
 
-			return (
-				m => onRecievedWrapper?.Invoke(++deliveryTag, m),
-				new MessageProcessedAwaiter<FooDto>(
+			return new Setup
+			{
+				ProcessedMessages = AssertEx.HasValue(() => processedMessages),
+				PublishMessagesCore = messages =>
+				{
+					foreach (var m in messages)
+						onRecievedWrapper?.Invoke(++deliveryTag, m);
+				},
+				Awaiter = new MessageProcessedAwaiter<FooDto>(
 					new { context = "present" },
 					m =>
 					{
-						processedMessages.Add(m);
+						lock (mutex)
+							processedMessages.Add(m);
+
 						processMessage?.Invoke(m);
 						return Task.CompletedTask;
 					},
 					new MessageProcessedSettings { TimeoutMilliseconds = 50 },
-					mock.Object),
-				processedMessages,
-				async verify =>
+					new LockingWrapper(mock.Object)),
+				Verify = async verify =>
 				{
 					await tcs.Task;
 
@@ -305,14 +365,67 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 					mock.Verify();
 					mock.VerifyNoOtherCalls();
-				}
-			);
+				},
+			};
+		}
+
+		private sealed class Setup
+		{
+			public void PublishMessage(string message) => PublishMessagesCore(new[] { message });
+			public void PublishMessages(params string[] messages) => PublishMessagesCore(messages );
+
+			public Action<IEnumerable<string>> PublishMessagesCore { get; set; }
+			public MessageProcessedAwaiter<FooDto> Awaiter { get; set; }
+			public Assertable<List<FooDto>> ProcessedMessages { get; set; }
+			public Func<Action<Mock<IRabbitMqWrapper>>, Task> Verify { get; set; }
 		}
 
 		private sealed class FooDto
 		{
 			public int Id { get; set; }
 			public string Bar { get; set; }
+		}
+
+		// Moq's internals get *very* confused when called from multiple threads.
+		private sealed class LockingWrapper : IRabbitMqWrapper
+		{
+			public LockingWrapper(IRabbitMqWrapper inner)
+			{
+				m_inner = inner;
+			}
+
+			public void Dispose()
+			{
+				lock (m_lock)
+					m_inner.Dispose();
+			}
+
+			public Task StartConsumer(string consumerTag, Action<ulong, string> onReceived, Action onCancelled)
+			{
+				lock (m_lock)
+					return m_inner.StartConsumer(consumerTag, onReceived, onCancelled);
+			}
+
+			public void BasicAck(ulong deliveryTag)
+			{
+				lock (m_lock)
+					m_inner.BasicAck(deliveryTag);
+			}
+
+			public void BasicNack(ulong deliveryTag, bool multiple)
+			{
+				lock (m_lock)
+					m_inner.BasicNack(deliveryTag, multiple);
+			}
+
+			public void BasicCancel(string consumerTag)
+			{
+				lock (m_lock)
+					m_inner.BasicCancel(consumerTag);
+			}
+
+			private readonly IRabbitMqWrapper m_inner;
+			private readonly object m_lock = new();
 		}
 	}
 }

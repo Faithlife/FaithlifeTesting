@@ -94,7 +94,7 @@ namespace Faithlife.Testing.RabbitMq
 			Completion.TrySetResult(AssertEx.HasValue(() => message).Context(m_context));
 		}
 
-		public void AssertTimeoutFailure()
+		public void AssertTimeoutFailure(int timeoutMilliseconds)
 		{
 			var messages = m_messages;
 			var assert = AssertEx.HasValue(() => messages)
@@ -102,6 +102,7 @@ namespace Faithlife.Testing.RabbitMq
 				.Context(new
 				{
 					messageCount = m_messageCount,
+					timeout = HumanReadable(timeoutMilliseconds),
 				});
 
 			// Perhaps we missed the message because we could not deserialize it.
@@ -111,6 +112,24 @@ namespace Faithlife.Testing.RabbitMq
 			var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
 			var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, m_predicateExpression);
 			assert.HasValue(Expression.Lambda<Func<List<TMessage>, TMessage>>(body, param));
+		}
+
+		public static string HumanReadable(int milliseconds)
+		{
+			const int second = 1000;
+			const int minute = second * 60;
+			const int hour = minute * 60;
+
+			if (milliseconds == 1)
+				return "1 millisecond";
+			if (milliseconds < second * 10)
+				return $"{milliseconds} milliseconds";
+			if (milliseconds < minute * 10)
+				return $"{milliseconds / second} seconds";
+			if (milliseconds < hour * 10)
+				return $"{milliseconds / minute} minutes";
+
+			return $"{milliseconds / hour} hours";
 		}
 
 		private const int c_messageLimit = 10;
