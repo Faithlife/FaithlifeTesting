@@ -168,12 +168,11 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				await setup.Verify(
-					_ =>
-					{
-						if (isPublishedBeforeWaitForMessage == false)
-							setup.PublishMessage("{ id: 1, bar: \"baz\" }");
-					});
+				await setup.Verify(_ =>
+				{
+					if (isPublishedBeforeWaitForMessage == false)
+						setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+				});
 
 				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
@@ -306,35 +305,42 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		private static Setup GivenSetup(bool shortTimeout = false, Action<FooDto> processMessage = null)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();
-			TaskCompletionSource<object> tcs = null;
-			var deliveryTag = 0ul;
-			Action<ulong, string> onRecievedWrapper = null;
 
 			var mutex = new object();
+			var deliveryTag = 0ul;
+			TaskCompletionSource<object> tcs = null;
+			Action<ulong, string> onRecievedWrapper = null;
 			var processedMessages = new List<FooDto>();
 
 			mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
 				.Callback<string, Action<ulong, string>, Action>((consumerTag, onRecieved, onClose) =>
 				{
-					tcs = new TaskCompletionSource<object>();
-					onRecievedWrapper = onRecieved;
-					mock
-						.Setup(r => r.BasicCancel(consumerTag))
-						.Callback(() =>
-						{
-							try
-							{
-								onClose();
-								tcs.TrySetResult(null);
-							}
-							catch (Exception e)
-							{
-								tcs.TrySetException(e);
-							}
+					lock (mutex)
+					{
+						tcs = new TaskCompletionSource<object>();
+						onRecievedWrapper = onRecieved;
+						mock
+							.Setup(r => r.BasicCancel(consumerTag))
+							.Callback(
+								() =>
+								{
+									lock (mutex)
+									{
+										try
+										{
+											onClose();
+											tcs.TrySetResult(null);
+										}
+										catch (Exception e)
+										{
+											tcs.TrySetException(e);
+										}
 
-							onRecievedWrapper = null;
-						})
-						.Verifiable();
+										onRecievedWrapper = null;
+									}
+								})
+							.Verifiable();
+					}
 				})
 				.Returns(Task.CompletedTask)
 				.Verifiable();
@@ -344,8 +350,11 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				ProcessedMessages = AssertEx.HasValue(() => processedMessages),
 				PublishMessagesCore = messages =>
 				{
-					foreach (var m in messages)
-						onRecievedWrapper?.Invoke(++deliveryTag, m);
+					lock (mutex)
+					{
+						foreach (var m in messages)
+							onRecievedWrapper?.Invoke(++deliveryTag, m);
+					}
 				},
 				Awaiter = new MessageProcessedAwaiter<FooDto>(
 					new { context = "present" },
