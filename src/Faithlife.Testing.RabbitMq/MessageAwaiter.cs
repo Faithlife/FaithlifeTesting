@@ -115,17 +115,16 @@ namespace Faithlife.Testing.RabbitMq
 
 		private const int c_messageLimit = 10;
 		private static readonly JsonSettings s_jsonInputSettings = new() { RejectsExtraProperties = false };
-		private static readonly MethodInfo s_first = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).Single(
-			m =>
-			{
-				var p = m.GetParameters();
-				return m.Name == "First"
-					&& p.Length == 2
-					&& p[0].ParameterType.IsGenericType
-					&& p[0].ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-					&& p[1].ParameterType.IsGenericType
-					&& p[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>);
-			});
+		private static readonly MethodInfo s_first = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).Single(m =>
+		{
+			var p = m.GetParameters();
+			return m.Name == "First"
+				&& p.Length == 2
+				&& p[0].ParameterType.IsGenericType
+				&& p[0].ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+				&& p[1].ParameterType.IsGenericType
+				&& p[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>);
+		});
 
 		private readonly Func<TMessage, bool> m_predicate;
 		private readonly object m_context;
