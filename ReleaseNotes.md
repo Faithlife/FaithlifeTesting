@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.1
+
+* Patch: Upgrade RabbitMQ.Client to 6.2.2.
+
 ## 2.1.0
 
 * Minor: Add a `MessageProcessedAwaiter` for waiting on existing-queue messages.
