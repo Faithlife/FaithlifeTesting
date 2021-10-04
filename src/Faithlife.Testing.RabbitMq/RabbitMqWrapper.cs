@@ -22,7 +22,7 @@ namespace Faithlife.Testing.RabbitMq
 			m_connection = new ConnectionFactory
 			{
 				HostName = serverName,
-				RequestedHeartbeat = 30,
+				RequestedHeartbeat = TimeSpan.FromSeconds(30),
 			}.CreateConnection();
 
 			try
@@ -51,7 +51,7 @@ namespace Faithlife.Testing.RabbitMq
 			var consumer = new EventingBasicConsumer(m_model);
 
 			// The body of the message must be copied before returning from the event handler.
-			consumer.Received += (_, args) => onReceived(args.DeliveryTag, args.Body?.Length > 0 ? Encoding.UTF8.GetString(args.Body) : "");
+			consumer.Received += (_, args) => onReceived(args.DeliveryTag, args.Body.Length > 0 ? Encoding.UTF8.GetString(args.Body.ToArray()) : "");
 
 			consumer.ConsumerCancelled += (_, _) => onCancelled();
 
