@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
 using Moq;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace Faithlife.Testing.Tests.RabbitMq
 {
@@ -71,6 +72,8 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				mock.Verify(r => r.BasicAck(3ul));
 				mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
 			});
+
+			setup.AssertAllMessagesWereAcked();
 		}
 
 		[Test]
@@ -103,6 +106,8 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				mock.Verify(r => r.BasicNack(It.IsIn(2ul, 4ul), It.IsAny<bool>()));
 				mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
 			});
+
+			setup.AssertAllMessagesWereAcked();
 		}
 
 		[Test]
@@ -138,6 +143,68 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				m.Count == 2
 				&& m[0].Id == 1
 				&& m[1].Id == 2);
+
+			setup.AssertAllMessagesWereAcked();
+		}
+
+		[Test, Timeout(10000)]
+		public async Task TestSequentialFailures()
+		{
+			var setup = GivenSetup(shortTimeout: true);
+
+			using (var a = new TestExecutionContext.IsolatedContext())
+			{
+				var firstMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
+
+				setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+				Assert.ThrowsAsync<AssertionException>(async () => await firstMessageProcessed);
+
+				await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+
+				var secondMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 3);
+
+				Assert.ThrowsAsync<AssertionException>(async () => await secondMessageProcessed);
+			}
+
+			await setup.Verify(mock =>
+			{
+				mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>()), Times.Once);
+
+				mock.Verify(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()), Times.Exactly(2));
+				mock.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Exactly(2));
+			});
+
+			setup.ProcessedMessages.IsTrue(m => m.Count == 0);
+		}
+
+		[Test, Timeout(10000)]
+		public async Task TestSequentialLongProcessing()
+		{
+			var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+			var setup = GivenSetup(processMessage: m => m.Id == 1 ? tcs.Task : Task.CompletedTask);
+
+			var firstMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
+
+			setup.PublishMessages(
+				"{ id: -1, bar: \"baz\" }",
+				"{ id: 1, bar: \"baz\" }");
+
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+
+			var secondMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
+
+			setup.PublishMessage("{ id: 2, bar: \"baz\" }");
+
+			await secondMessageProcessed;
+
+			await setup.Verify(mock => mock.Verify(r => r.BasicAck(3ul)));
+
+			tcs.SetResult();
+
+			await firstMessageProcessed;
+
+			await setup.Verify(mock => mock.Verify(r => r.BasicAck(2ul)));
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
@@ -302,22 +369,70 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			mock.VerifyNoOtherCalls();
 		}
 
-		private static Setup GivenSetup(bool shortTimeout = false, Action<FooDto> processMessage = null)
+		[TestCase(0, 0, "",  "",  "",  0, "")]
+
+		[TestCase(1, 0, "",  "",  "",  1, "")]
+		[TestCase(1, 0, "1", "",  "",  0, "")]
+		[TestCase(1, 0, "",  "1", "",  0, "")]
+		[TestCase(1, 0, "",  "",  "1", 1, "")]
+		[TestCase(1, 1, "",  "",  "",  0, "")]
+		[TestCase(1, 1, "1", "",  "",  0, "")]
+		[TestCase(1, 1, "",  "1", "",  0, "")]
+		[TestCase(1, 1, "",  "",  "1", 1, "")]
+
+		[TestCase(2, 0, "1", "",  "",  0, "2")]
+		[TestCase(2, 0, "",  "1", "",  2, "")]
+		[TestCase(2, 0, "",  "",  "1", 2, "")]
+		[TestCase(2, 0, "2", "",  "",  1, "")]
+		[TestCase(2, 0, "",  "2", "",  1, "")]
+		[TestCase(2, 0, "",  "",  "2", 2, "")]
+		[TestCase(2, 1, "2", "",  "",  0, "")]
+		[TestCase(2, 1, "",  "2", "",  0, "")]
+		[TestCase(2, 1, "", "",   "2", 2, "")]
+
+		[TestCase(6, 5, "",  "",  "",  6, "")]
+		[TestCase(5, 5, "",  "",  "",  0, "")]
+		[TestCase(5, 5, "",  "",  "4", 4, "")]
+		[TestCase(6, 5, "",  "",  "4", 6, "")]
+		public void TestCalculateNacks(int lastObserved, int previouslyNackedThrough, string processing, string acked, string shouldNack, int expectedNackMultiple, string expectedNackSingle)
+		{
+			var actualNackSingle = new List<ulong>();
+
+			MessageProcessedAwaiter<FooDto>.CalculateNacks(
+				(ulong) lastObserved,
+				(ulong) previouslyNackedThrough,
+				Cast(processing),
+				Cast(acked),
+				Cast(shouldNack),
+				out var actualNackMultiple,
+				ref actualNackSingle);
+
+			AssertEx.IsTrue(() => actualNackMultiple == (ulong) expectedNackMultiple);
+
+			// Assert.AreEqual still has better set-equality semantics than AssertEx. :(
+			Assert.AreEqual(Cast(expectedNackSingle).ToList(), actualNackSingle);
+
+			// Strings to facilitate test-case names.
+			static HashSet<ulong> Cast(string source) => (source ?? Enumerable.Empty<char>()).Select(i => (ulong) (i - '1' + 1)).ToHashSet();
+		}
+
+		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();
 
 			var mutex = new object();
 			var deliveryTag = 0ul;
-			TaskCompletionSource<object> tcs = null;
+			TaskCompletionSource tcs = null;
 			Action<ulong, string> onRecievedWrapper = null;
 			var processedMessages = new List<FooDto>();
+			var observedTags = new HashSet<ulong>();
 
 			mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
 				.Callback<string, Action<ulong, string>, Action>((consumerTag, onRecieved, onClose) =>
 				{
 					lock (mutex)
 					{
-						tcs = new TaskCompletionSource<object>();
+						tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 						onRecievedWrapper = onRecieved;
 						mock
 							.Setup(r => r.BasicCancel(consumerTag))
@@ -329,7 +444,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 										try
 										{
 											onClose();
-											tcs.TrySetResult(null);
+											tcs.TrySetResult();
 										}
 										catch (Exception e)
 										{
@@ -344,6 +459,40 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				})
 				.Returns(Task.CompletedTask)
 				.Verifiable();
+
+			mock.Setup(r => r.BasicNack(It.IsAny<ulong>(), It.IsAny<bool>()))
+				.Callback<ulong, bool>(
+					(dt, multiple) =>
+					{
+						lock (mutex)
+						{
+							if (dt > deliveryTag)
+								throw new InvalidOperationException("Unexpected large delivery tag");
+
+							if (!observedTags.Add(dt))
+								throw new InvalidOperationException($"Duplicate nack for delivery tag: {dt}");
+
+							if (multiple)
+							{
+								for (; dt > 0ul; dt--)
+									observedTags.Add(dt);
+							}
+						}
+					});
+
+			mock.Setup(r => r.BasicAck(It.IsAny<ulong>()))
+				.Callback<ulong>(
+					dt =>
+					{
+						lock (mutex)
+						{
+							if (dt > deliveryTag)
+								throw new InvalidOperationException("Unexpected large delivery tag");
+
+							if (!observedTags.Add(dt))
+								throw new InvalidOperationException($"Duplicate ack for delivery tag: {dt}");
+						}
+					});
 
 			return new Setup
 			{
@@ -363,8 +512,9 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 						lock (mutex)
 							processedMessages.Add(m);
 
-						processMessage?.Invoke(m);
-						return Task.CompletedTask;
+						return processMessage != null
+							? processMessage(m)
+							: Task.CompletedTask;
 					},
 					new MessageProcessedSettings { TimeoutMilliseconds = shortTimeout ? 50 : 5_000 },
 					new LockingWrapper(mock.Object)),
@@ -377,6 +527,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 					mock.Verify();
 					mock.VerifyNoOtherCalls();
 				},
+				AssertAllMessagesWereAcked = () => AssertEx.IsTrue(() => deliveryTag == (ulong) observedTags.Count),
 			};
 		}
 
@@ -389,6 +540,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			public MessageProcessedAwaiter<FooDto> Awaiter { get; set; }
 			public Assertable<List<FooDto>> ProcessedMessages { get; set; }
 			public Func<Action<Mock<IRabbitMqWrapper>>, Task> Verify { get; set; }
+			public Action AssertAllMessagesWereAcked { get; set; }
 		}
 
 		private sealed class FooDto

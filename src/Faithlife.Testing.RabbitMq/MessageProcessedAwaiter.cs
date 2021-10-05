@@ -191,29 +191,23 @@ namespace Faithlife.Testing.RabbitMq
 						{
 							consumerState.SetComplete();
 
-							if (!m_waitingDeliveryTags.Any())
+							CalculateNacks(m_lastObservedDeliveryTag, m_previouslyNackedThrough, m_processingDeliveryTags, m_ackedDeliveryTags, m_shouldNackDeliveryTags, out nackMultiple, ref nackSingle);
+
+							// Ensure we don't nack anything twice when the next subscriber comes along
+							m_previouslyNackedThrough = m_lastObservedDeliveryTag;
+
+							// Cleanup tracking sets
+							m_shouldNackDeliveryTags.Clear();
+
+							if (!m_processingDeliveryTags.Any())
 							{
-								nackMultiple = m_lastObservedDeliveryTag;
+								m_ackedDeliveryTags.Clear();
 							}
 							else
 							{
-								// Ensure we do not NACK a tag awaiting ACKing by an awaiter when doing our `nackMultiple`.
-								// It's OK for there to be ACKed messages *smaller* than this value, though.
-								var minimumAwaitingAck = m_waitingDeliveryTags.Min();
-
-								nackMultiple = minimumAwaitingAck - 1ul;
-
-								// NACK all the tags after our minimumAwaitingAck RBAR
-								for (var tag = minimumAwaitingAck + 1ul; tag <= m_lastObservedDeliveryTag; tag++)
-								{
-									if (!m_explicitDeliveryTags.Contains(tag))
-										nackSingle.Add(tag);
-								}
+								var min = m_processingDeliveryTags.Min();
+								m_ackedDeliveryTags.RemoveWhere(dt => dt < min);
 							}
-
-							// We'll get an error if we NACK something we've already ACKed (or vice-versa).
-							while (nackMultiple > 0ul && m_explicitDeliveryTags.Contains(nackMultiple))
-								nackMultiple -= 1ul;
 						}
 
 						// If set to 1, the delivery tag is treated as "up to and including", so that multiple messages can be rejected with a single method.
@@ -242,6 +236,45 @@ namespace Faithlife.Testing.RabbitMq
 			}
 		}
 
+		internal static void CalculateNacks(ulong lastObserved, ulong previouslyNackedThrough, HashSet<ulong> processing, HashSet<ulong> acked, HashSet<ulong> shouldNack, out ulong nackMultiple, ref List<ulong> nackSingle)
+		{
+			if (!processing.Any())
+			{
+				// If no delivery-tags are processing, nack the last non-acked one.
+				nackMultiple = lastObserved;
+			}
+			else
+			{
+				// Ensure we do not NACK a tag awaiting ACKing by an awaiter when doing our `nackMultiple`.
+				// It's OK for there to be previously-ACKed messages *smaller* than this value, though.
+				var firstNackSingle = processing.Min();
+
+				// nack all messages until the last non-acked message before the first message still processing.
+				nackMultiple = firstNackSingle - 1ul;
+
+				// NACK all the tags after our `firstNackSingle` RBAR
+				for (var tag = firstNackSingle + 1ul; tag <= lastObserved; tag++)
+				{
+					if (!acked.Contains(tag) && !processing.Contains(tag))
+						nackSingle.Add(tag);
+				}
+			}
+
+			// We'll get an error if we NACK something we've already ACKed.
+			while (acked.Contains(nackMultiple))
+				nackMultiple -= 1ul;
+
+			// Never `nack` before `previouslyNackedThrough` **unless** it's been put in `shouldNack` since.
+			if (nackMultiple <= previouslyNackedThrough)
+			{
+				var needsNack = shouldNack.Where(dt => dt <= previouslyNackedThrough).ToList();
+
+				nackMultiple = needsNack.Any()
+					? needsNack.Max()
+					: 0ul;
+			}
+		}
+
 		private async Task SubscribeAsync(ConsumerState consumer, ChannelReader<(ulong DeliveryTag, string Body)> messages)
 		{
 			CancellationTokenSource timeout = null;
@@ -260,8 +293,7 @@ namespace Faithlife.Testing.RabbitMq
 
 							if (awaiter != null)
 							{
-								m_explicitDeliveryTags.Add(item.DeliveryTag);
-								m_waitingDeliveryTags.Add(item.DeliveryTag);
+								m_processingDeliveryTags.Add(item.DeliveryTag);
 								m_awaiters.Remove(awaiter);
 							}
 
@@ -361,7 +393,10 @@ namespace Faithlife.Testing.RabbitMq
 			m_rabbitMq.BasicAck(deliveryTag);
 
 			lock (m_lock)
-				m_waitingDeliveryTags.Remove(deliveryTag);
+			{
+				m_ackedDeliveryTags.Add(deliveryTag);
+				m_processingDeliveryTags.Remove(deliveryTag);
+			}
 		}
 
 		private void Nack(ulong deliveryTag)
@@ -372,8 +407,8 @@ namespace Faithlife.Testing.RabbitMq
 			lock (m_lock)
 			{
 				shouldNack = m_consumerState.Current == ConsumerState.State.Complete;
-				m_explicitDeliveryTags.Remove(deliveryTag);
-				m_waitingDeliveryTags.Remove(deliveryTag);
+				m_processingDeliveryTags.Remove(deliveryTag);
+				m_shouldNackDeliveryTags.Add(deliveryTag);
 			}
 
 			if (shouldNack)
@@ -520,10 +555,12 @@ namespace Faithlife.Testing.RabbitMq
 
 		private readonly List<MessageAwaiter<TMessage>> m_awaiters = new();
 		private readonly IRabbitMqWrapper m_rabbitMq;
-		private readonly HashSet<ulong> m_waitingDeliveryTags = new();
-		private readonly HashSet<ulong> m_explicitDeliveryTags = new();
+		private readonly HashSet<ulong> m_processingDeliveryTags = new();
+		private readonly HashSet<ulong> m_ackedDeliveryTags = new();
+		private readonly HashSet<ulong> m_shouldNackDeliveryTags = new();
 
 		private ulong m_lastObservedDeliveryTag;
+		private ulong m_previouslyNackedThrough;
 		private Exception m_exception;
 		private ConsumerState m_consumerState;
 	}

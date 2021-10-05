@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.2
+
+* Patch: Fix duplicate-ack bug in re-used `MessageProcessedAwaiter`s.
+
 ## 2.1.1
 
 * Patch: Upgrade RabbitMQ.Client to 6.2.2.
