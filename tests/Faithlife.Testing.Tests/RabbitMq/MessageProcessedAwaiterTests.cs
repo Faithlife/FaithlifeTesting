@@ -369,53 +369,6 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			mock.VerifyNoOtherCalls();
 		}
 
-		[TestCase(0, 0, "",  "",  "",  0, "")]
-
-		[TestCase(1, 0, "",  "",  "",  1, "")]
-		[TestCase(1, 0, "1", "",  "",  0, "")]
-		[TestCase(1, 0, "",  "1", "",  0, "")]
-		[TestCase(1, 0, "",  "",  "1", 1, "")]
-		[TestCase(1, 1, "",  "",  "",  0, "")]
-		[TestCase(1, 1, "1", "",  "",  0, "")]
-		[TestCase(1, 1, "",  "1", "",  0, "")]
-		[TestCase(1, 1, "",  "",  "1", 1, "")]
-
-		[TestCase(2, 0, "1", "",  "",  0, "2")]
-		[TestCase(2, 0, "",  "1", "",  2, "")]
-		[TestCase(2, 0, "",  "",  "1", 2, "")]
-		[TestCase(2, 0, "2", "",  "",  1, "")]
-		[TestCase(2, 0, "",  "2", "",  1, "")]
-		[TestCase(2, 0, "",  "",  "2", 2, "")]
-		[TestCase(2, 1, "2", "",  "",  0, "")]
-		[TestCase(2, 1, "",  "2", "",  0, "")]
-		[TestCase(2, 1, "", "",   "2", 2, "")]
-
-		[TestCase(6, 5, "",  "",  "",  6, "")]
-		[TestCase(5, 5, "",  "",  "",  0, "")]
-		[TestCase(5, 5, "",  "",  "4", 4, "")]
-		[TestCase(6, 5, "",  "",  "4", 6, "")]
-		public void TestCalculateNacks(int lastObserved, int previouslyNackedThrough, string processing, string acked, string shouldNack, int expectedNackMultiple, string expectedNackSingle)
-		{
-			var actualNackSingle = new List<ulong>();
-
-			MessageProcessedAwaiter<FooDto>.CalculateNacks(
-				(ulong) lastObserved,
-				(ulong) previouslyNackedThrough,
-				Cast(processing),
-				Cast(acked),
-				Cast(shouldNack),
-				out var actualNackMultiple,
-				ref actualNackSingle);
-
-			AssertEx.IsTrue(() => actualNackMultiple == (ulong) expectedNackMultiple);
-
-			// Assert.AreEqual still has better set-equality semantics than AssertEx. :(
-			Assert.AreEqual(Cast(expectedNackSingle).ToList(), actualNackSingle);
-
-			// Strings to facilitate test-case names.
-			static HashSet<ulong> Cast(string source) => (source ?? Enumerable.Empty<char>()).Select(i => (ulong) (i - '1' + 1)).ToHashSet();
-		}
-
 		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();

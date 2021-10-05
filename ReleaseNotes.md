@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.3
+
+* Patch: Fix another duplicate-ack bug in re-used `MessageProcessedAwaiter`s, improve tests and code-clarity.
+
 ## 2.1.2
 
 * Patch: Fix duplicate-ack bug in re-used `MessageProcessedAwaiter`s.
