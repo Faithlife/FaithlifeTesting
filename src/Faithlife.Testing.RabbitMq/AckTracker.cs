@@ -12,16 +12,22 @@ namespace Faithlife.Testing.RabbitMq
 
 		public void StartProcessing(ulong deliveryTag) => m_processingDeliveryTags.Add(deliveryTag);
 
-		public void EndProcessing(ulong deliveryTag, bool acked = false, bool shouldNack = false)
+		public void EndProcessing(ulong deliveryTag, ProcessResult result)
 		{
 			if (!m_processingDeliveryTags.Remove(deliveryTag))
 				throw new InvalidOperationException("Must call StartProcessing before calling EndProcessing");
 
-			if (acked)
+			if (result == ProcessResult.AlreadyAcked)
 				m_ackedDeliveryTags.Add(deliveryTag);
-
-			if (shouldNack)
+			else if (result == ProcessResult.ShouldNack)
 				m_shouldNackDeliveryTags.Add(deliveryTag);
+		}
+
+		public enum ProcessResult
+		{
+			AlreadyNacked,
+			AlreadyAcked,
+			ShouldNack,
 		}
 
 		public void CalculateNacks(out ulong nackMultiple, ref List<ulong> nackSingle)

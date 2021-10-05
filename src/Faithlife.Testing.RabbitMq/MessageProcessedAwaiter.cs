@@ -339,7 +339,7 @@ namespace Faithlife.Testing.RabbitMq
 
 			lock (m_lock)
 			{
-				m_ackTracker.EndProcessing(deliveryTag, acked: true);
+				m_ackTracker.EndProcessing(deliveryTag, AckTracker.ProcessResult.AlreadyAcked);
 			}
 		}
 
@@ -347,14 +347,18 @@ namespace Faithlife.Testing.RabbitMq
 		{
 			// If the consumer is complete, we've gotta nack the message ourselves.
 			// Otherwise its shutdown handler will nack it for us when not marked explicit.
-			bool shouldNackExplicitly;
+			bool shouldNackImmediately;
 			lock (m_lock)
 			{
-				shouldNackExplicitly = m_consumerState.Current == ConsumerState.State.Complete;
-				m_ackTracker.EndProcessing(deliveryTag, shouldNack: !shouldNackExplicitly);
+				shouldNackImmediately = m_consumerState.Current == ConsumerState.State.Complete;
+				m_ackTracker.EndProcessing(
+					deliveryTag,
+					shouldNackImmediately
+						? AckTracker.ProcessResult.AlreadyNacked
+						: AckTracker.ProcessResult.ShouldNack);
 			}
 
-			if (shouldNackExplicitly)
+			if (shouldNackImmediately)
 				m_rabbitMq.BasicNack(deliveryTag, multiple: false);
 		}
 
