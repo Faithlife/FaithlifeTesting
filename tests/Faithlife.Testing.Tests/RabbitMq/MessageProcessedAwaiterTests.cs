@@ -147,7 +147,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			setup.AssertAllMessagesWereAcked();
 		}
 
-		[Test, Timeout(1000)]
+		[Test, Timeout(10000)]
 		public async Task TestSequentialFailures()
 		{
 			var setup = GivenSetup(shortTimeout: true);
@@ -178,7 +178,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			setup.ProcessedMessages.IsTrue(m => m.Count == 0);
 		}
 
-		[Test, Timeout(1000)]
+		[Test, Timeout(10000)]
 		public async Task TestSequentialLongProcessing()
 		{
 			var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -207,7 +207,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			await setup.Verify(mock => mock.Verify(r => r.BasicAck(2ul)));
 		}
 
-		[Test, Timeout(1000), ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -245,7 +245,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(1000), ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -280,7 +280,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(1000), ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -316,7 +316,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(1000), ExpectedMessage(@"Expected:
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 2)
 
 Actual:
