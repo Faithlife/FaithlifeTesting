@@ -26,7 +26,7 @@ namespace Faithlife.Testing.RabbitMq
 
 		public TMessage Message { get; private set; }
 
-		public static MessageAwaiter<TMessage> FirstMatch(IEnumerable<MessageAwaiter<TMessage>> awaiters, string messageJson)
+		public static IEnumerable<MessageAwaiter<TMessage>> GetMatches(IEnumerable<MessageAwaiter<TMessage>> awaiters, string messageJson)
 		{
 			TMessage message;
 
@@ -49,11 +49,9 @@ namespace Faithlife.Testing.RabbitMq
 				foreach (var potentialAwaiter in awaiters)
 				{
 					if (potentialAwaiter.CheckMessage(message))
-						return potentialAwaiter;
+						yield return potentialAwaiter;
 				}
 			}
-
-			return null;
 		}
 
 		private void AddMalformed(string message)

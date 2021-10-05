@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Channels;
@@ -60,6 +61,16 @@ namespace Faithlife.Testing.RabbitMq
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
+		internal MessagePublishedAwaiter(TimeSpan timeout, object context, IRabbitMqWrapper rabbitMq, ChannelReader<string> messages)
+		{
+			m_timeout = timeout;
+			m_context = context;
+			m_rabbitMq = rabbitMq;
+			m_messages = messages;
+
+			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
+		}
+
 		public LazyTask<Assertable<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
 		{
 			var awaiter = new MessageAwaiter<TMessage>(m_context, predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression)));
@@ -79,11 +90,18 @@ namespace Faithlife.Testing.RabbitMq
 				var result = awaiter.Completion.Task;
 				await Task.WhenAny(result, Task.Delay(m_timeout));
 
-				lock (m_lock)
-					m_awaiters.Remove(awaiter);
-
 				if (result.IsCompleted)
-					return result.Result;
+					return await result;
+
+				bool isCompleted;
+				lock (m_lock)
+				{
+					isCompleted = awaiter.Message != null;
+					m_awaiters.Remove(awaiter);
+				}
+
+				if (isCompleted)
+					return await result;
 
 				awaiter.AssertTimeoutFailure((int) m_timeout.TotalMilliseconds);
 
@@ -117,7 +135,13 @@ namespace Faithlife.Testing.RabbitMq
 					{
 						lock (m_lock)
 						{
-							MessageAwaiter<TMessage>.FirstMatch(m_awaiters, body)?.Complete();
+							var matches = MessageAwaiter<TMessage>.GetMatches(m_awaiters, body).ToList();
+
+							foreach (var match in matches)
+							{
+								m_awaiters.Remove(match);
+								match.Complete();
+							}
 						}
 					}
 				}
