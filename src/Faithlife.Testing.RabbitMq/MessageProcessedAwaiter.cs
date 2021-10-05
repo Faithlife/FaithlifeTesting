@@ -234,7 +234,7 @@ namespace Faithlife.Testing.RabbitMq
 						MessageAwaiter<TMessage> awaiter;
 						lock (m_lock)
 						{
-							awaiter = MessageAwaiter<TMessage>.FirstMatch(m_awaiters, item.Body);
+							awaiter = MessageAwaiter<TMessage>.GetMatches(m_awaiters, item.Body).FirstOrDefault();
 
 							if (awaiter != null)
 							{

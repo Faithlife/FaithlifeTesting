@@ -111,6 +111,31 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		}
 
 		[Test]
+		public async Task TestDuplicateMessages()
+		{
+			var setup = GivenSetup();
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
+
+			setup.PublishMessages(
+				"{ id: 1, bar: \"baz\" }",
+				"{ id: 1, bar: \"zab\" }");
+
+			var message = (await messageProcessed).IsTrue(m =>
+					m.Id == 1
+					&& m.Bar == "baz")
+				.Value;
+
+			setup.ProcessedMessages.IsTrue(messages => messages.Single() == message);
+
+			await setup.Verify(mock =>
+			{
+				mock.Verify(r => r.BasicAck(1ul));
+				mock.Verify(r => r.BasicNack(2ul, It.IsAny<bool>()));
+			});
+		}
+
+		[Test]
 		public async Task TestSequentialAwaits()
 		{
 			var setup = GivenSetup();
@@ -367,6 +392,42 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				mock.Object);
 
 			mock.VerifyNoOtherCalls();
+		}
+
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+	messages.First(m => true)
+
+Actual:
+	messages = []
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 0
+	context = ""present""
+	timeoutReason = ""after `await`""
+
+System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
+		public async Task TestMultipleAwaitersForSameMessage()
+		{
+			var setup = GivenSetup(shortTimeout: true);
+
+			var firstMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
+			var secondMessageProcessed = setup.Awaiter.WaitForMessage(m => true);
+
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+			await firstMessageProcessed;
+
+			try
+			{
+				await secondMessageProcessed;
+			}
+			finally
+			{
+				await setup.Verify(model => model.Verify(r => r.BasicAck(1ul)));
+
+				setup.ProcessedMessages.IsTrue(m => m.Single().Id == 1);
+			}
 		}
 
 		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null)

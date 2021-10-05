@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.4
+
+* Patch: Fix regression in `MessagePublishedAwaiter`, added tests.
+
 ## 2.1.3
 
 * Patch: Fix another duplicate-ack bug in re-used `MessageProcessedAwaiter`s, improve tests and code-clarity.
