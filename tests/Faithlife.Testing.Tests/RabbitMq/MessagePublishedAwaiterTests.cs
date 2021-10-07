@@ -41,6 +41,31 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+	messages.First(m => Throw())
+
+Actual:
+	messages = [{ ""id"": 1, ""bar"": ""baz"" }]
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 1
+	context = ""present""
+
+System.InvalidOperationException: This is a test.", expectStackTrace: true)]
+		public async Task TestPredicateFailure()
+		{
+			var (awaiter, messages) = GetAwaiter(shortTimeout: true);
+
+			var messagePublished = awaiter.WaitForMessage(m => Throw());
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			await messagePublished;
+		}
+
+		private static bool Throw() => throw new InvalidOperationException("This is a test.");
+
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
