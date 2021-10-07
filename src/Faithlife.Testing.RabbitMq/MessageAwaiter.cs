@@ -61,7 +61,7 @@ namespace Faithlife.Testing.RabbitMq
 
 			m_messageCount++;
 
-			if (m_messageCount < c_messageLimit)
+			if (m_messageCount <= c_messageLimit)
 				m_malformedMessages.Add(message);
 		}
 
