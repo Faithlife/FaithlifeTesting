@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.5
+
+* Patch: Gracefully handle exceptions thrown by message-awaiter predicates.
+
 ## 2.1.4
 
 * Patch: Fix regression in `MessagePublishedAwaiter`, added tests.

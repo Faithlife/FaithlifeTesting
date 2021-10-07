@@ -72,10 +72,24 @@ namespace Faithlife.Testing.RabbitMq
 
 			m_messageCount++;
 
-			if (m_messageCount < c_messageLimit)
+			if (m_messageCount <= c_messageLimit)
 				m_messages.Add(message);
 
-			var foundMatch = m_predicate(message);
+			bool foundMatch;
+
+			try
+			{
+				foundMatch = m_predicate(message);
+			}
+			catch (Exception e)
+			{
+				// If we added this message to `m_messages`, we'll get the exception again when we do our `assert.HasValue`.
+				// Otherwise, log it separately.
+				if (m_messageCount > c_messageLimit && m_messageExceptions.Count < c_messageLimit)
+					m_messageExceptions.Add(e);
+
+				foundMatch = false;
+			}
 
 			if (foundMatch)
 				Message = message;
@@ -106,6 +120,10 @@ namespace Faithlife.Testing.RabbitMq
 			// Perhaps we missed the message because we could not deserialize it.
 			if (m_malformedMessages.Any())
 				assert = assert.Context(new { malformedMessages = m_malformedMessages });
+
+			// Perhaps we missed the message because got an exception checking if it matches.
+			if (m_messageExceptions.Any())
+				assert = assert.Context(new { messageExceptions = m_messageExceptions });
 
 			var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");
 			var body = Expression.Call(s_first.MakeGenericMethod(typeof(TMessage)), param, m_predicateExpression);
@@ -149,6 +167,7 @@ namespace Faithlife.Testing.RabbitMq
 
 		private readonly List<TMessage> m_messages = new();
 		private readonly List<string> m_malformedMessages = new();
+		private readonly List<Exception> m_messageExceptions = new();
 		private int m_messageCount;
 	}
 }

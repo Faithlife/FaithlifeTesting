@@ -31,6 +31,74 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			await setup.Verify(mock => mock.Verify(r => r.BasicAck(1ul)));
 		}
 
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+	messages.First(m => m.Id == 1)
+
+Actual:
+	messages = []
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 0
+	context = ""present""
+	timeoutReason = ""after `await`""
+
+System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
+		public async Task TestNoMessages([Values] bool? isPublishedBeforeWaitForMessage)
+		{
+			var setup = GivenSetup(shortTimeout: true);
+
+			if (isPublishedBeforeWaitForMessage == true)
+				setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
+
+			try
+			{
+				await messageProcessed;
+			}
+			finally
+			{
+				await setup.Verify(_ =>
+				{
+					if (isPublishedBeforeWaitForMessage == false)
+						setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+				});
+
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
+			}
+		}
+
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+	messages.First(m => Throw())
+
+Actual:
+	messages = [{ ""id"": 1, ""bar"": ""baz"" }]
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 1
+	context = ""present""
+	timeoutReason = ""after `await`""
+
+System.InvalidOperationException: This is a test.", expectStackTrace: true)]
+		public async Task TestPredicateFailure()
+		{
+			var setup = GivenSetup(shortTimeout: true);
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => Throw());
+
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+			await messageProcessed;
+
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+
+			setup.ProcessedMessages.IsTrue(m => !m.Any());
+		}
+
+		private static bool Throw() => throw new InvalidOperationException("This is a test.");
+
 		[Test]
 		public async Task TestProcessMessageFailure()
 		{
@@ -230,44 +298,6 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			await firstMessageProcessed;
 
 			await setup.Verify(mock => mock.Verify(r => r.BasicAck(2ul)));
-		}
-
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
-	messages.First(m => m.Id == 1)
-
-Actual:
-	messages = []
-
-Context:
-	timeout = ""50 milliseconds""
-	messageCount = 0
-	context = ""present""
-	timeoutReason = ""after `await`""
-
-System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
-		public async Task TestNoMessages([Values] bool? isPublishedBeforeWaitForMessage)
-		{
-			var setup = GivenSetup(shortTimeout: true);
-
-			if (isPublishedBeforeWaitForMessage == true)
-				setup.PublishMessage("{ id: 1, bar: \"baz\" }");
-
-			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 1);
-
-			try
-			{
-				await messageProcessed;
-			}
-			finally
-			{
-				await setup.Verify(_ =>
-				{
-					if (isPublishedBeforeWaitForMessage == false)
-						setup.PublishMessage("{ id: 1, bar: \"baz\" }");
-				});
-
-				setup.ProcessedMessages.IsTrue(m => !m.Any());
-			}
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
