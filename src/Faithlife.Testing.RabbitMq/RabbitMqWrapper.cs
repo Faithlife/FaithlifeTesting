@@ -48,7 +48,9 @@ namespace Faithlife.Testing.RabbitMq
 
 		public Task StartConsumer(string consumerTag, Action<ulong, string> onReceived, Action onCancelled)
 		{
-			var consumer = new EventingBasicConsumer(m_model);
+			var model = m_model ?? throw new ObjectDisposedException(nameof(RabbitMqWrapper));
+
+			var consumer = new EventingBasicConsumer(model);
 
 			// The body of the message must be copied before returning from the event handler.
 			consumer.Received += (_, args) => onReceived(args.DeliveryTag, args.Body.Length > 0 ? Encoding.UTF8.GetString(args.Body.ToArray()) : "");
@@ -61,7 +63,7 @@ namespace Faithlife.Testing.RabbitMq
 
 			try
 			{
-				m_model.BasicConsume(
+				model.BasicConsume(
 					m_queueName,
 					autoAck: m_autoAck,
 					consumerTag: consumerTag ?? "",
@@ -82,9 +84,11 @@ namespace Faithlife.Testing.RabbitMq
 
 		public void BasicAck(ulong deliveryTag)
 		{
+			var model = m_model ?? throw new ObjectDisposedException(nameof(RabbitMqWrapper));
+
 			try
 			{
-				m_model.BasicAck(deliveryTag, multiple: false);
+				model.BasicAck(deliveryTag, multiple: false);
 			}
 			catch (Exception e)
 			{
@@ -94,9 +98,11 @@ namespace Faithlife.Testing.RabbitMq
 
 		public void BasicNack(ulong deliveryTag, bool multiple)
 		{
+			var model = m_model ?? throw new ObjectDisposedException(nameof(RabbitMqWrapper));
+
 			try
 			{
-				m_model.BasicNack(deliveryTag, multiple: multiple, requeue: true);
+				model.BasicNack(deliveryTag, multiple: multiple, requeue: true);
 			}
 			catch (Exception e)
 			{
@@ -106,9 +112,11 @@ namespace Faithlife.Testing.RabbitMq
 
 		public void BasicCancel(string consumerTag)
 		{
+			var model = m_model ?? throw new ObjectDisposedException(nameof(RabbitMqWrapper));
+
 			try
 			{
-				m_model.BasicCancel(consumerTag);
+				model.BasicCancel(consumerTag);
 			}
 			catch (Exception e)
 			{

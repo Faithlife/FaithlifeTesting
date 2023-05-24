@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.6
+
+* Patch: Fix NRE when MessageProcessedAwaiter is disposed with an outstanding message.
+
 ## 2.1.5
 
 * Patch: Gracefully handle exceptions thrown by message-awaiter predicates.

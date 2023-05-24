@@ -34,7 +34,7 @@ namespace Faithlife.Testing.RabbitMq
 
 			var queueName = $"{exchangeName}_{routingKeyName}_awaiter_{Environment.MachineName}_{Guid.NewGuid():N}";
 
-			m_rabbitMq = new RabbitMqWrapper(serverName, queueName, priority: 0, autoAck: true, onError: e => m_exception = e, setup: model =>
+			m_rabbitMq = new RabbitMqWrapper(serverName, queueName, priority: 0, autoAck: true, onError: e => m_exception ??= e, setup: model =>
 			{
 				model.QueueDeclare(
 					queue: queueName,
@@ -113,7 +113,7 @@ namespace Faithlife.Testing.RabbitMq
 		{
 			lock (m_lock)
 			{
-				m_exception = new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
+				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
 
 				m_cancellationTokenSource.Cancel();
 
@@ -148,7 +148,7 @@ namespace Faithlife.Testing.RabbitMq
 			}
 			catch (Exception e)
 			{
-				m_exception = e;
+				m_exception ??= e;
 			}
 		}
 
