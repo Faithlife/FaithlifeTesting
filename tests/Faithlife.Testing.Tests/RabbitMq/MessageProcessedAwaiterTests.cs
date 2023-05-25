@@ -70,6 +70,39 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+	messages.First(m => m.Id == 2)
+
+Actual:
+	messages = [{ ""id"": 1, ""bar"": ""baz"" }]
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 1
+	context = ""present""
+	timeoutReason = ""unacked message""
+
+System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
+		public async Task TestUnackedMessageTimeout()
+		{
+			var setup = GivenSetup(shortTimeout: true);
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
+
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+
+			try
+			{
+				await messageProcessed;
+			}
+			finally
+			{
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
+			}
+		}
+
+		[Test, Timeout(10000), ExpectedMessage(@"Expected:
 	messages.First(m => Throw())
 
 Actual:
@@ -79,7 +112,7 @@ Context:
 	timeout = ""50 milliseconds""
 	messageCount = 1
 	context = ""present""
-	timeoutReason = ""after `await`""
+	timeoutReason = ""unacked message""
 
 System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 		public async Task TestPredicateFailure()
@@ -90,11 +123,16 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			await messageProcessed;
-
 			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
 
-			setup.ProcessedMessages.IsTrue(m => !m.Any());
+			try
+			{
+				await messageProcessed;
+			}
+			finally
+			{
+				setup.ProcessedMessages.IsTrue(m => !m.Any());
+			}
 		}
 
 		private static bool Throw() => throw new InvalidOperationException("This is a test.");
