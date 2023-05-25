@@ -460,7 +460,58 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null)
+		[Test]
+		public async Task TestDispose()
+		{
+			var setup = GivenSetup(noStart: true);
+
+			setup.Awaiter.Dispose();
+
+			await setup.Verify(model => model.Verify(r => r.Dispose(), Times.Once));
+		}
+
+		[Test]
+		public async Task TestDisposeAfterMessage()
+		{
+			var setup = GivenSetup();
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => true);
+
+			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+			await messageProcessed;
+
+			setup.Awaiter.Dispose();
+
+			await setup.Verify(
+				model =>
+				{
+					model.Verify(r => r.BasicAck(1ul));
+					model.Verify(r => r.Dispose(), Times.Once);
+					model.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Once);
+				});
+		}
+
+		[Test]
+		public async Task TestDisposeBeforeAwait()
+		{
+			var setup = GivenSetup();
+
+			var messageProcessed = setup.Awaiter.WaitForMessage(m => true);
+
+			setup.Awaiter.Dispose();
+
+			Assert.ThrowsAsync<TaskCanceledException>(async () => await messageProcessed);
+
+			await setup.Verify(
+				model =>
+				{
+					model.Verify(r => r.Dispose(), Times.Once);
+					model.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Once);
+				});
+		}
+
+		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null, bool noStart = false)
 		{
 			var mock = new Mock<IRabbitMqWrapper>();
 
@@ -470,39 +521,50 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			Action<ulong, string> onRecievedWrapper = null;
 			var processedMessages = new List<FooDto>();
 			var observedTags = new HashSet<ulong>();
+			var isDisposed = false;
 
-			mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
-				.Callback<string, Action<ulong, string>, Action>((consumerTag, onRecieved, onClose) =>
-				{
-					lock (mutex)
-					{
-						tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-						onRecievedWrapper = onRecieved;
-						mock
-							.Setup(r => r.BasicCancel(consumerTag))
-							.Callback(
-								() =>
-								{
-									lock (mutex)
-									{
-										try
-										{
-											onClose();
-											tcs.TrySetResult();
-										}
-										catch (Exception e)
-										{
-											tcs.TrySetException(e);
-										}
+			if (!noStart)
+			{
+				mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
+					.Callback<string, Action<ulong, string>, Action>(
+						(consumerTag, onRecieved, onClose) =>
+						{
+							lock (mutex)
+							{
+								if (isDisposed)
+									throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
 
-										onRecievedWrapper = null;
-									}
-								})
-							.Verifiable();
-					}
-				})
-				.Returns(Task.CompletedTask)
-				.Verifiable();
+								tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+								onRecievedWrapper = onRecieved;
+								mock
+									.Setup(r => r.BasicCancel(consumerTag))
+									.Callback(
+										() =>
+										{
+											lock (mutex)
+											{
+												if (isDisposed)
+													throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+
+												try
+												{
+													onClose();
+													tcs.TrySetResult();
+												}
+												catch (Exception e)
+												{
+													tcs.TrySetException(e);
+												}
+
+												onRecievedWrapper = null;
+											}
+										})
+									.Verifiable();
+							}
+						})
+					.Returns(Task.CompletedTask)
+					.Verifiable();
+			}
 
 			mock.Setup(r => r.BasicNack(It.IsAny<ulong>(), It.IsAny<bool>()))
 				.Callback<ulong, bool>(
@@ -510,6 +572,9 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 					{
 						lock (mutex)
 						{
+							if (isDisposed)
+								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+
 							if (dt > deliveryTag)
 								throw new InvalidOperationException("Unexpected large delivery tag");
 
@@ -530,11 +595,26 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 					{
 						lock (mutex)
 						{
+							if (isDisposed)
+								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+
 							if (dt > deliveryTag)
 								throw new InvalidOperationException("Unexpected large delivery tag");
 
 							if (!observedTags.Add(dt))
 								throw new InvalidOperationException($"Duplicate ack for delivery tag: {dt}");
+						}
+					});
+
+			mock.Setup(r => r.Dispose())
+				.Callback(
+					() =>
+					{
+						lock (mutex)
+						{
+							if (isDisposed)
+								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+							isDisposed = true;
 						}
 					});
 
@@ -564,7 +644,8 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 					new LockingWrapper(mock.Object)),
 				Verify = async verify =>
 				{
-					await tcs.Task;
+					if (tcs is not null)
+						await tcs.Task;
 
 					verify(mock);
 

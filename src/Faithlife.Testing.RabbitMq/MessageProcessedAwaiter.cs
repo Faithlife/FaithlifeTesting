@@ -97,10 +97,13 @@ namespace Faithlife.Testing.RabbitMq
 
 		public void Dispose()
 		{
+			Task consumerIsComplete = null;
 			lock (m_lock)
 			{
 				if (m_consumerState != null)
 				{
+					consumerIsComplete = m_consumerState.IsComplete;
+
 					m_consumerState.Stop();
 
 					foreach (var awaiter in m_awaiters)
@@ -109,9 +112,12 @@ namespace Faithlife.Testing.RabbitMq
 					m_awaiters.Clear();
 				}
 
-				m_exception = new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
-				m_rabbitMq.Dispose();
+				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
 			}
+
+			consumerIsComplete?.GetAwaiter().GetResult();
+
+			m_rabbitMq.Dispose();
 		}
 
 		private Task AddAwaiter(MessageAwaiter<TMessage> awaiter)
@@ -303,6 +309,7 @@ namespace Faithlife.Testing.RabbitMq
 				}
 
 				// Cancel our consumer so that we can release all backed-up messages.
+				// Will "Complete" the consumer when done.
 				m_rabbitMq.BasicCancel(consumer.ConsumerTag);
 			}
 		}
@@ -378,19 +385,18 @@ namespace Faithlife.Testing.RabbitMq
 		{
 			lock (m_lock)
 			{
-				m_exception = e;
+				m_exception ??= e;
 
 				foreach (var awaiter in m_awaiters)
 					awaiter.Completion.TrySetException(e);
 
 				m_awaiters.Clear();
-				m_consumerState = null;
-
-				// Design Decision: No re-connect logic.
-				// Doesn't matter if one test fails due to RabbitMq trouble or 15, the build's still broken.
-				// (change this if test retries become important)
-				m_rabbitMq.Dispose();
 			}
+
+			// Design Decision: No re-connect logic.
+			// Doesn't matter if one test fails due to RabbitMq trouble or 15, the build's still broken.
+			// (change this if test retries become important)
+			Dispose();
 		}
 
 		private Func<Task, Task> WithTimeout()

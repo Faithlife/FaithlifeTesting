@@ -2,6 +2,7 @@ using System;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
+using Moq;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.RabbitMq
@@ -154,17 +155,33 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			(await secondMessagePublished).IsTrue(m => m.Bar == "zab");
 		}
 
+		[Test]
+		public async Task TestDisposeBeforeAwait()
+		{
+			var mock = new Mock<IRabbitMqWrapper>();
+			var (awaiter, _) = GetAwaiter(rabbitMq: mock.Object);
+
+			var messagePublished = awaiter.WaitForMessage(_ => true);
+
+			awaiter.Dispose();
+
+			Assert.ThrowsAsync<TaskCanceledException>(async () => await messagePublished);
+
+			mock.Verify(r => r.Dispose(), Times.Once);
+			mock.VerifyNoOtherCalls();
+		}
+
 		private sealed class FooDto
 		{
 			public int Id { get; set; }
 			public string Bar { get; set; }
 		}
 
-		private static (MessagePublishedAwaiter<FooDto> Awaiter, ChannelWriter<string> Messages) GetAwaiter(bool shortTimeout = false)
+		private static (MessagePublishedAwaiter<FooDto> Awaiter, ChannelWriter<string> Messages) GetAwaiter(bool shortTimeout = false, IRabbitMqWrapper rabbitMq = null)
 		{
 			var messages = Channel.CreateUnbounded<string>();
 			return (
-				new MessagePublishedAwaiter<FooDto>(TimeSpan.FromMilliseconds(shortTimeout ? 50 : 10_000), new { context = "present" }, null, messages.Reader),
+				new MessagePublishedAwaiter<FooDto>(TimeSpan.FromMilliseconds(shortTimeout ? 50 : 10_000), new { context = "present" }, rabbitMq, messages.Reader),
 				messages.Writer);
 		}
 	}
