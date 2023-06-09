@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <VersionPrefix>2.1.6</VersionPrefix>
+    <VersionPrefix>2.1.7</VersionPrefix>
     <LangVersion>9.0</LangVersion>
     <Nullable>disable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

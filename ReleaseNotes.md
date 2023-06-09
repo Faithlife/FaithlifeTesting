@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.7
+
+* Patch: Fix NRE when displaying a tuple.
+
 ## 2.1.6
 
 * Patch: Fix NRE when MessageProcessedAwaiter is disposed with an outstanding message.

@@ -392,23 +392,24 @@ namespace Faithlife.Testing
 					return Property("Value");
 
 				if (genericType == typeof(ValueTuple<>))
-					return $"({Property("Item1")})";
+					return $"({Field("Item1")})";
 				if (genericType == typeof(ValueTuple<,>))
-					return $"({Property("Item1")}, {Property("Item2")})";
+					return $"({Field("Item1")}, {Field("Item2")})";
 				if (genericType == typeof(ValueTuple<,,>))
-					return $"({Property("Item1")}, {Property("Item2")}, {Property("Item3")})";
+					return $"({Field("Item1")}, {Field("Item2")}, {Field("Item3")})";
 				if (genericType == typeof(ValueTuple<,,,>))
-					return $"({Property("Item1")}, {Property("Item2")}, {Property("Item3")}, {Property("Item4")})";
+					return $"({Field("Item1")}, {Field("Item2")}, {Field("Item3")}, {Field("Item4")})";
 				if (genericType == typeof(ValueTuple<,,,,>))
-					return $"({Property("Item1")}, {Property("Item2")}, {Property("Item3")}, {Property("Item4")}, {Property("Item5")})";
+					return $"({Field("Item1")}, {Field("Item2")}, {Field("Item3")}, {Field("Item4")}, {Field("Item5")})";
 				if (genericType == typeof(ValueTuple<,,,,,>))
-					return $"({Property("Item1")}, {Property("Item2")}, {Property("Item3")}, {Property("Item4")}, {Property("Item5")}, {Property("Item6")})";
+					return $"({Field("Item1")}, {Field("Item2")}, {Field("Item3")}, {Field("Item4")}, {Field("Item5")}, {Field("Item6")})";
 				if (genericType == typeof(ValueTuple<,,,,,,>))
-					return $"({Property("Item1")}, {Property("Item2")}, {Property("Item3")}, {Property("Item4")}, {Property("Item5")}, {Property("Item6")}, {Property("Item7")})";
+					return $"({Field("Item1")}, {Field("Item2")}, {Field("Item3")}, {Field("Item4")}, {Field("Item5")}, {Field("Item6")}, {Field("Item7")})";
 				if (genericType == typeof(ValueTuple<,,,,,,,>))
-					return $"({Property("Item1")}, {Property("Item2")}, {Property("Item3")}, {Property("Item4")}, {Property("Item5")}, {Property("Item6")}, {Property("Item7")}, {Property("Rest").TrimStart('(')}";
+					return $"({Field("Item1")}, {Field("Item2")}, {Field("Item3")}, {Field("Item4")}, {Field("Item5")}, {Field("Item6")}, {Field("Item7")}, {Field("Rest").TrimStart('(')}";
 
-				string Property(string name) => ToString(type.GetProperty(name).GetValue(obj));
+				string Property(string name) => ToString((type.GetProperty(name) ?? throw new InvalidOperationException($"Unexpected Error: No property {name} on type {type.Name}")).GetValue(obj));
+				string Field(string name) => ToString((type.GetField(name) ?? throw new InvalidOperationException($"Unexpected Error: No field {name} on type {type.Name}")).GetValue(obj));
 			}
 
 			var toString = obj.ToString();

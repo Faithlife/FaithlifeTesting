@@ -589,6 +589,19 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 			AssertEx.IsTrue(() => barDto.Foo.Baz == 5);
 		}
 
+		[Test, ExpectedMessage(@"Expected:
+	value.Item1 == ""test""
+
+Actual:
+	value.Item1 = ""foo""")]
+		public void TestTupleProperty()
+		{
+			(string Foo, string Bar) value = ("foo", "bar");
+
+			// Note the property name doesn't make it into the error message :(
+			AssertEx.IsTrue(() => value.Foo == "test");
+		}
+
 		private sealed class FooDto
 		{
 			public string Id { get; set; }

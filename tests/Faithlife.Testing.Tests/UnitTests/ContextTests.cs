@@ -155,6 +155,26 @@ Actual:
 			AssertHasContext(@"value = 1");
 		}
 
+		[Test]
+		public void TestContextTuple()
+		{
+			(string Foo, string Bar) value = ("foo", "bar");
+
+			using var d = AssertEx.Context(() => value);
+
+			AssertHasContext(@"value = (""foo"", ""bar"")");
+		}
+
+		[Test]
+		public void TestContextLongTuple()
+		{
+			var value = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+			using var d = AssertEx.Context(() => value);
+
+			AssertHasContext(@"value = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
+		}
+
 		private static void AssertHasNoContext()
 		{
 			var assertion = Assert.Throws<AssertionException>(() => AssertEx.IsTrue(() => false));
