@@ -2,7 +2,7 @@ using System;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
-using Moq;
+using FakeItEasy;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.RabbitMq
@@ -158,8 +158,8 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		[Test]
 		public async Task TestDisposeBeforeAwait()
 		{
-			var mock = new Mock<IRabbitMqWrapper>();
-			var (awaiter, _) = GetAwaiter(rabbitMq: mock.Object);
+			var mock = A.Fake<IRabbitMqWrapper>();
+			var (awaiter, _) = GetAwaiter(rabbitMq: mock);
 
 			var messagePublished = awaiter.WaitForMessage(_ => true);
 
@@ -167,8 +167,8 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			Assert.ThrowsAsync<TaskCanceledException>(async () => await messagePublished);
 
-			mock.Verify(r => r.Dispose(), Times.Once);
-			mock.VerifyNoOtherCalls();
+			A.CallTo(() => mock.Dispose()).MustHaveHappenedOnceExactly();
+			A.CallTo(mock).MustHaveHappenedOnceExactly();
 		}
 
 		private sealed class FooDto

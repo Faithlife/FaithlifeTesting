@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
-using Moq;
+using FakeItEasy;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 
@@ -28,7 +29,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 
 			setup.ProcessedMessages.IsTrue(messages => messages.Single() == message);
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicAck(1ul)));
+			await setup.VerifyConsumerCalls(mock => mock.BasicAck(1ul));
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
@@ -59,11 +60,12 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				await setup.Verify(_ =>
-				{
-					if (isPublishedBeforeWaitForMessage == false)
-						setup.PublishMessage("{ id: 1, bar: \"baz\" }");
-				});
+				await setup.VerifyConsumerCalls();
+
+				if (isPublishedBeforeWaitForMessage == false)
+					setup.PublishMessage("{ id: 1, bar: \"baz\" }");
+
+				await setup.VerifyCalls();
 
 				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
@@ -90,7 +92,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, A<bool>._));
 
 			try
 			{
@@ -123,7 +125,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, A<bool>._));
 
 			try
 			{
@@ -152,7 +154,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			AssertEx.IsTrue(() => exception.Message.Contains(message, StringComparison.InvariantCulture));
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, A<bool>._));
 		}
 
 		[Test]
@@ -172,12 +174,10 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			setup.ProcessedMessages.IsTrue(m => m.Single().Id == 3);
 
-			await setup.Verify(mock =>
-			{
-				mock.Verify(r => r.BasicNack(It.IsIn(2ul, 4ul), It.IsAny<bool>()));
-				mock.Verify(r => r.BasicAck(3ul));
-				mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
-			});
+			await setup.VerifyConsumerCalls(
+				mock => mock.BasicNack(2ul, A<bool>._),
+				mock => mock.BasicAck(3ul),
+				mock => mock.BasicNack(4ul, A<bool>._));
 
 			setup.AssertAllMessagesWereAcked();
 		}
@@ -205,13 +205,11 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 				&& messages.Any(m => m.Id == 1)
 				&& messages.Any(m => m.Id == 3));
 
-			await setup.Verify(mock =>
-			{
-				mock.Verify(r => r.BasicAck(1ul));
-				mock.Verify(r => r.BasicAck(3ul));
-				mock.Verify(r => r.BasicNack(It.IsIn(2ul, 4ul), It.IsAny<bool>()));
-				mock.Verify(r => r.BasicNack(4ul, It.IsAny<bool>()));
-			});
+			await setup.VerifyConsumerCalls(
+				mock => mock.BasicAck(1ul),
+				mock => mock.BasicNack(2ul, A<bool>._),
+				mock => mock.BasicAck(3ul),
+				mock => mock.BasicNack(4ul, A<bool>._));
 
 			setup.AssertAllMessagesWereAcked();
 		}
@@ -234,11 +232,9 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			setup.ProcessedMessages.IsTrue(messages => messages.Single() == message);
 
-			await setup.Verify(mock =>
-			{
-				mock.Verify(r => r.BasicAck(1ul));
-				mock.Verify(r => r.BasicNack(2ul, It.IsAny<bool>()));
-			});
+			await setup.VerifyConsumerCalls(
+				mock => mock.BasicAck(1ul),
+				mock => mock.BasicNack(2ul, A<bool>._));
 		}
 
 		[Test]
@@ -252,7 +248,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			await firstMessageProcessed;
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicAck(1ul)));
+			await setup.VerifyConsumerCalls(mock => mock.BasicAck(1ul));
 
 			setup.PublishMessage("{ id: -1, bar: \"unseen\" }");
 
@@ -262,13 +258,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			await secondMessageProcessed;
 
-			await setup.Verify(mock =>
-			{
-				mock.Verify(r => r.BasicAck(2ul));
-
-				mock.Verify(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()), Times.Exactly(2));
-				mock.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Exactly(2));
-			});
+			await setup.VerifyConsumerCalls(mock => mock.BasicAck(2ul));
 
 			setup.ProcessedMessages.IsTrue(m =>
 				m.Count == 2
@@ -291,20 +281,14 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 				Assert.ThrowsAsync<AssertionException>(async () => await firstMessageProcessed);
 
-				await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+				await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, true));
 
 				var secondMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 3);
 
 				Assert.ThrowsAsync<AssertionException>(async () => await secondMessageProcessed);
 			}
 
-			await setup.Verify(mock =>
-			{
-				mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>()), Times.Once);
-
-				mock.Verify(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()), Times.Exactly(2));
-				mock.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Exactly(2));
-			});
+			await setup.VerifyConsumerCalls();
 
 			setup.ProcessedMessages.IsTrue(m => m.Count == 0);
 		}
@@ -321,7 +305,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 				"{ id: -1, bar: \"baz\" }",
 				"{ id: 1, bar: \"baz\" }");
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, It.IsAny<bool>())));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, A<bool>._));
 
 			var secondMessageProcessed = setup.Awaiter.WaitForMessage(m => m.Id == 2);
 
@@ -329,13 +313,13 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 			await secondMessageProcessed;
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicAck(3ul)));
+			await setup.VerifyConsumerCalls(mock => mock.BasicAck(3ul));
 
 			tcs.SetResult();
 
 			await firstMessageProcessed;
 
-			await setup.Verify(mock => mock.Verify(r => r.BasicAck(2ul)));
+			await setup.VerifyCalls(mock => mock.BasicAck(2ul));
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
@@ -361,7 +345,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			// necessary to ensure we hit the "consumer timeout" message not the "awaiter timeout" message,
 			// just so the error message is consistent.
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, true));
 
 			try
 			{
@@ -397,7 +381,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			// necessary to ensure we hit the "consumer timeout" message not the "awaiter timeout" message,
 			// just so the error message is consistent.
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, true));
 
 			try
 			{
@@ -431,7 +415,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			setup.PublishMessage("{ id: 1, bar: \"baz\" }");
 
 			// Wait until after the consumer shuts down.
-			await setup.Verify(mock => mock.Verify(r => r.BasicNack(1ul, true)));
+			await setup.VerifyConsumerCalls(mock => mock.BasicNack(1ul, true));
 
 			// Does nothing.
 			setup.PublishMessage("{ id: 2, bar: \"baz\" }");
@@ -442,7 +426,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				await setup.Verify(_ => { });
+				await setup.VerifyCalls();
 
 				setup.ProcessedMessages.IsTrue(m => !m.Any());
 			}
@@ -451,15 +435,15 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		[Test]
 		public void TestConstructorDoesNotCreateConsumer()
 		{
-			var mock = new Mock<IRabbitMqWrapper>();
+			var mock = A.Fake<IRabbitMqWrapper>();
 
 			var unused = new MessageProcessedAwaiter<FooDto>(
 				new { },
 				_ => Task.CompletedTask,
 				new MessageProcessedSettings(),
-				mock.Object);
+				mock);
 
-			mock.VerifyNoOtherCalls();
+			A.CallTo(mock).MustNotHaveHappened();
 		}
 
 		[Test, Timeout(10000), ExpectedMessage(@"Expected:
@@ -492,7 +476,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 			finally
 			{
-				await setup.Verify(model => model.Verify(r => r.BasicAck(1ul)));
+				await setup.VerifyConsumerCalls(model => model.BasicAck(1ul));
 
 				setup.ProcessedMessages.IsTrue(m => m.Single().Id == 1);
 			}
@@ -501,11 +485,11 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		[Test]
 		public async Task TestDispose()
 		{
-			var setup = GivenSetup(noStart: true);
+			var setup = GivenSetup();
 
 			setup.Awaiter.Dispose();
 
-			await setup.Verify(model => model.Verify(r => r.Dispose(), Times.Once));
+			await setup.VerifyCalls(model => model.Dispose());
 		}
 
 		[Test]
@@ -521,13 +505,9 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			setup.Awaiter.Dispose();
 
-			await setup.Verify(
-				model =>
-				{
-					model.Verify(r => r.BasicAck(1ul));
-					model.Verify(r => r.Dispose(), Times.Once);
-					model.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Once);
-				});
+			await setup.VerifyConsumerCalls(
+				model => model.BasicAck(1ul),
+				model => model.Dispose());
 		}
 
 		[Test]
@@ -541,122 +521,103 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 
 			Assert.ThrowsAsync<TaskCanceledException>(async () => await messageProcessed);
 
-			await setup.Verify(
-				model =>
-				{
-					model.Verify(r => r.Dispose(), Times.Once);
-					model.Verify(r => r.BasicCancel(It.IsAny<string>()), Times.Once);
-				});
+			await setup.VerifyConsumerCalls(model => model.Dispose());
 		}
 
-		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null, bool noStart = false)
+		private static Setup GivenSetup(bool shortTimeout = false, Func<FooDto, Task> processMessage = null)
 		{
-			var mock = new Mock<IRabbitMqWrapper>();
+			var mock = A.Fake<IRabbitMqWrapper>(x => x.Strict(StrictFakeOptions.AllowToString));
 
 			var mutex = new object();
 			var deliveryTag = 0ul;
-			TaskCompletionSource tcs = null;
 			Action<ulong, string> onRecievedWrapper = null;
 			var processedMessages = new List<FooDto>();
 			var observedTags = new HashSet<ulong>();
 			var isDisposed = false;
+			var consumers = new List<(string Tag, Task Cancelled)>();
 
-			if (!noStart)
+			A.CallTo(() => mock.StartConsumer(A<string>._, A<Action<ulong, string>>._, A<Action>._)).Invokes((string consumerTag, Action<ulong, string> onRecieved, Action onClose) =>
 			{
-				mock.Setup(r => r.StartConsumer(It.IsAny<string>(), It.IsAny<Action<ulong, string>>(), It.IsAny<Action>()))
-					.Callback<string, Action<ulong, string>, Action>(
-						(consumerTag, onRecieved, onClose) =>
+				lock (mutex)
+				{
+					if (isDisposed)
+						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+
+					var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+					onRecievedWrapper = onRecieved;
+					consumers.Add((consumerTag, tcs.Task));
+
+					A.CallTo(() => mock.BasicCancel(consumerTag)).Invokes(_ =>
+					{
+						lock (mutex)
 						{
-							lock (mutex)
+							if (isDisposed)
+								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+
+							try
 							{
-								if (isDisposed)
-									throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
-
-								tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-								onRecievedWrapper = onRecieved;
-								mock
-									.Setup(r => r.BasicCancel(consumerTag))
-									.Callback(
-										() =>
-										{
-											lock (mutex)
-											{
-												if (isDisposed)
-													throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
-
-												try
-												{
-													onClose();
-													tcs.TrySetResult();
-												}
-												catch (Exception e)
-												{
-													tcs.TrySetException(e);
-												}
-
-												onRecievedWrapper = null;
-											}
-										})
-									.Verifiable();
+								onClose();
+								tcs.TrySetResult();
 							}
-						})
-					.Returns(Task.CompletedTask)
-					.Verifiable();
-			}
-
-			mock.Setup(r => r.BasicNack(It.IsAny<ulong>(), It.IsAny<bool>()))
-				.Callback<ulong, bool>(
-					(dt, multiple) =>
-					{
-						lock (mutex)
-						{
-							if (isDisposed)
-								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
-
-							if (dt > deliveryTag)
-								throw new InvalidOperationException("Unexpected large delivery tag");
-
-							if (!observedTags.Add(dt))
-								throw new InvalidOperationException($"Duplicate nack for delivery tag: {dt}");
-
-							if (multiple)
+							catch (Exception e)
 							{
-								for (; dt > 0ul; dt--)
-									observedTags.Add(dt);
+								tcs.TrySetException(e);
 							}
+
+							onRecievedWrapper = null;
 						}
 					});
+				}
+			})
+				.Returns(Task.CompletedTask);
 
-			mock.Setup(r => r.BasicAck(It.IsAny<ulong>()))
-				.Callback<ulong>(
-					dt =>
+			A.CallTo(() => mock.BasicNack(A<ulong>._, A<bool>._)).Invokes((ulong dt, bool multiple) =>
+			{
+				lock (mutex)
+				{
+					if (isDisposed)
+						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+
+					if (dt > deliveryTag)
+						throw new InvalidOperationException("Unexpected large delivery tag");
+
+					if (!observedTags.Add(dt))
+						throw new InvalidOperationException($"Duplicate nack for delivery tag: {dt}");
+
+					if (multiple)
 					{
-						lock (mutex)
-						{
-							if (isDisposed)
-								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						for (; dt > 0ul; dt--)
+							observedTags.Add(dt);
+					}
+				}
+			});
 
-							if (dt > deliveryTag)
-								throw new InvalidOperationException("Unexpected large delivery tag");
+			A.CallTo(() => mock.BasicAck(A<ulong>._)).Invokes((ulong dt) =>
+			{
+				lock (mutex)
+				{
+					if (isDisposed)
+						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
 
-							if (!observedTags.Add(dt))
-								throw new InvalidOperationException($"Duplicate ack for delivery tag: {dt}");
-						}
-					});
+					if (dt > deliveryTag)
+						throw new InvalidOperationException("Unexpected large delivery tag");
 
-			mock.Setup(r => r.Dispose())
-				.Callback(
-					() =>
-					{
-						lock (mutex)
-						{
-							if (isDisposed)
-								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
-							isDisposed = true;
-						}
-					});
+					if (!observedTags.Add(dt))
+						throw new InvalidOperationException($"Duplicate ack for delivery tag: {dt}");
+				}
+			});
 
-			return new Setup
+			A.CallTo(() => mock.Dispose()).Invokes(() =>
+			{
+				lock (mutex)
+				{
+					if (isDisposed)
+						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+					isDisposed = true;
+				}
+			});
+
+			return new Setup(mock, consumers)
 			{
 				ProcessedMessages = AssertEx.HasValue(() => processedMessages),
 				PublishMessagesCore = messages =>
@@ -679,79 +640,62 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 							: Task.CompletedTask;
 					},
 					new MessageProcessedSettings { TimeoutMilliseconds = shortTimeout ? 50 : 5_000 },
-					new LockingWrapper(mock.Object)),
-				Verify = async verify =>
-				{
-					if (tcs is not null)
-						await tcs.Task;
-
-					verify(mock);
-
-					mock.Verify();
-					mock.VerifyNoOtherCalls();
-				},
+					mock),
 				AssertAllMessagesWereAcked = () => AssertEx.IsTrue(() => deliveryTag == (ulong) observedTags.Count),
 			};
 		}
 
 		private sealed class Setup
 		{
+			public Setup(IRabbitMqWrapper mock, List<(string Tag, Task Cancelled)> consumers)
+			{
+				m_mock = mock;
+				m_consumers = consumers;
+			}
+
 			public void PublishMessage(string message) => PublishMessagesCore(new[] { message });
 			public void PublishMessages(params string[] messages) => PublishMessagesCore(messages );
 
 			public Action<IEnumerable<string>> PublishMessagesCore { get; set; }
 			public MessageProcessedAwaiter<FooDto> Awaiter { get; set; }
 			public Assertable<List<FooDto>> ProcessedMessages { get; set; }
-			public Func<Action<Mock<IRabbitMqWrapper>>, Task> Verify { get; set; }
 			public Action AssertAllMessagesWereAcked { get; set; }
+
+			public async Task VerifyConsumerCalls(params Expression<Action<IRabbitMqWrapper>>[] calls)
+			{
+				m_consumerCount++;
+				m_expectedCallCount += 2;
+
+				A.CallTo(() => m_mock.StartConsumer(A<string>._, A<Action<ulong, string>>._, A<Action>._)).MustHaveHappened(m_consumerCount, Times.Exactly);
+
+				await VerifyCalls(calls);
+
+				foreach (var consumer in m_consumers)
+					A.CallTo(() => m_mock.BasicCancel(consumer.ConsumerTag)).MustHaveHappenedOnceExactly();
+			}
+
+			public async Task VerifyCalls(params Expression<Action<IRabbitMqWrapper>>[] calls)
+			{
+				await Task.WhenAll(m_consumers.Select(c => c.Cancelled));
+
+				foreach (var call in calls)
+					A.CallTo(Expression.Lambda<Action>(ExpressionHelper.ReplaceParameters(call, Expression.Constant(m_mock)))).MustHaveHappenedOnceExactly();
+
+				m_expectedCallCount += calls.Length;
+				A.CallTo(m_mock).MustHaveHappened(m_expectedCallCount, Times.Exactly);
+			}
+
+			private readonly IRabbitMqWrapper m_mock;
+			private readonly List<(string ConsumerTag, Task Cancelled)> m_consumers;
+
+			private int m_consumerCount;
+			private int m_expectedCallCount;
 		}
 
 		private sealed class FooDto
 		{
 			public int Id { get; set; }
 			public string Bar { get; set; }
-		}
-
-		// Moq's internals get *very* confused when called from multiple threads.
-		private sealed class LockingWrapper : IRabbitMqWrapper
-		{
-			public LockingWrapper(IRabbitMqWrapper inner)
-			{
-				m_inner = inner;
-			}
-
-			public void Dispose()
-			{
-				lock (m_lock)
-					m_inner.Dispose();
-			}
-
-			public Task StartConsumer(string consumerTag, Action<ulong, string> onReceived, Action onCancelled)
-			{
-				lock (m_lock)
-					return m_inner.StartConsumer(consumerTag, onReceived, onCancelled);
-			}
-
-			public void BasicAck(ulong deliveryTag)
-			{
-				lock (m_lock)
-					m_inner.BasicAck(deliveryTag);
-			}
-
-			public void BasicNack(ulong deliveryTag, bool multiple)
-			{
-				lock (m_lock)
-					m_inner.BasicNack(deliveryTag, multiple);
-			}
-
-			public void BasicCancel(string consumerTag)
-			{
-				lock (m_lock)
-					m_inner.BasicCancel(consumerTag);
-			}
-
-			private readonly IRabbitMqWrapper m_inner;
-			private readonly object m_lock = new();
 		}
 	}
 }
