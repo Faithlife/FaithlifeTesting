@@ -9,7 +9,7 @@
 
 ## Table of Contents
 
-* [Endoresements](#endoresements)
+* [Endorsements](#endorsements)
 * [Why use `Faithlife.Testing`?](#why-use-faithlifetesting)
 * [Advanced Examples](#advanced-examples)
   * [`Assertable<T>`](#assertablet)
