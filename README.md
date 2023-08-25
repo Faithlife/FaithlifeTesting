@@ -160,5 +160,5 @@ Because `Faithlife.Testing` is based around expressions, some [newer C# language
 These features include:
 
 * `async/await` - instead of using `async/await` in an expression, you can call a separate function to get an asynchronous value then make synchronous assertions on it.
-* The `null`-coalescing operator -- instead of using the null-coalescing `?.` operator, just let the `NullReferenceException`s fly! `Faithlife.Testing` will tell you exactly what was `null`.
+* The `null`-coalescing operator -- instead of using the null-coalescing `?.` operator, just let the `NullReferenceException`s fly! `Faithlife.Testing` will tell you exactly what was `null`. Use the null-forgiving operator (`!`) as needed to avoid compiler warnings.
 * Modern pattern matching, e.g. `is null`, `is not null`, `is "foo" or "bar"`, `is { Year: 2023, Month: 8, Day: 24 }`, etc.
