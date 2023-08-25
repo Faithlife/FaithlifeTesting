@@ -155,7 +155,7 @@ Helpful context -- in the form of name/value pairs displayed in assertion messag
 
 ## Limitations of Expressions
 
-Because `Faithlife.Testing` is based around expressions, some newer C# language features cannot be used inside assertions. These features can be used inside functions called by your expression -- just not inside the expression itself.
+Because `Faithlife.Testing` is based around expressions, some [newer C# language features](https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/expression-trees/#limitations) cannot be used inside assertions. These features can be used inside functions called by your expression -- just not inside the expression itself.
 
 These features include:
 
