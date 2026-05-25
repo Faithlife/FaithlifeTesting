@@ -32,7 +32,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			await setup.VerifyConsumerCalls(mock => mock.BasicAck(1ul));
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -71,7 +71,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 2)
 
 Actual:
@@ -104,7 +104,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => Throw())
 
 Actual:
@@ -268,7 +268,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 			setup.AssertAllMessagesWereAcked();
 		}
 
-		[Test, Timeout(10000)]
+		[Test, CancelAfter(10000)]
 		public async Task TestSequentialFailures()
 		{
 			var setup = GivenSetup(shortTimeout: true);
@@ -293,7 +293,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 			setup.ProcessedMessages.IsTrue(m => m.Count == 0);
 		}
 
-		[Test, Timeout(10000)]
+		[Test, CancelAfter(10000)]
 		public async Task TestSequentialLongProcessing()
 		{
 			var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -322,7 +322,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 			await setup.VerifyCalls(mock => mock.BasicAck(2ul));
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -357,7 +357,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -393,7 +393,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 2)
 
 Actual:
@@ -446,7 +446,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			A.CallTo(mock).MustNotHaveHappened();
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => true)
 
 Actual:

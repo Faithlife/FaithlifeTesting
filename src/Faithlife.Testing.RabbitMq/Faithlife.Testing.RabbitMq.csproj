@@ -2,14 +2,22 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <Description>Test helpers for RabbitMQ-based integrations.</Description>
     <IsPackable>true</IsPackable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RewritePackageReadmeLinks>true</RewritePackageReadmeLinks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Faithlife.Json" Version="0.7.0" />
-    <PackageReference Include="Faithlife.WebRequests" Version="0.9.0" />
-    <PackageReference Include="RabbitMQ.Client" Version="6.2.2" />
-    <PackageReference Include="System.Threading.Channels" Version="5.0.0" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Faithlife.Json" />
+    <PackageReference Include="Faithlife.WebRequests" />
+    <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="System.Threading.Channels" />
   </ItemGroup>
 
   <ItemGroup>

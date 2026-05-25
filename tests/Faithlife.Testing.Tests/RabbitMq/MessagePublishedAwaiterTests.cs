@@ -22,7 +22,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 			(await messagePublished).IsTrue(m => m.Bar == "baz");
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -41,7 +41,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			await awaiter.WaitForMessage(m => m.Id == 1);
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => Throw())
 
 Actual:
@@ -66,7 +66,7 @@ System.InvalidOperationException: This is a test.", expectStackTrace: true)]
 
 		private static bool Throw() => throw new InvalidOperationException("This is a test.");
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:
@@ -90,7 +90,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			await messagePublished;
 		}
 
-		[Test, Timeout(10000), ExpectedMessage(@"Expected:
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
 	messages.First(m => m.Id == 1)
 
 Actual:

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
@@ -32,11 +33,17 @@ namespace Faithlife.Testing.Tests
 		public void AssertMessageIsExpected(string message)
 		{
 			message = Normalize(message);
-
-			if (ExpectStackTrace && ExpectedMessage.Length <= message.Length)
+			var expectedMessage = ExpectedMessage;
+			if (!ExpectStackTrace)
 			{
-				Assert.AreEqual(ExpectedMessage, message[..ExpectedMessage.Length], message);
-				var stackTrace = message[ExpectedMessage.Length..];
+				expectedMessage = RemoveStackTraceLines(expectedMessage).TrimEnd('\n');
+				message = RemoveStackTraceLines(message).TrimEnd('\n');
+			}
+
+			if (ExpectStackTrace && expectedMessage.Length <= message.Length)
+			{
+				Assert.AreEqual(expectedMessage, message[..expectedMessage.Length], message);
+				var stackTrace = message[expectedMessage.Length..];
 
 				Assert.IsNotEmpty(stackTrace, "Expected stack trace, got: " + message);
 
@@ -45,11 +52,15 @@ namespace Faithlife.Testing.Tests
 			}
 			else
 			{
-				Assert.AreEqual(ExpectedMessage, message);
+				Assert.AreEqual(expectedMessage, message);
 			}
 		}
 
 		private static string Normalize(string value) => value?.Replace("\r\n", "\n", StringComparison.InvariantCultureIgnoreCase);
+
+		private static string RemoveStackTraceLines(string value) => Regex.Replace(string.Join("\n", value
+			.Split('\n')
+			.Where(line => !line.TrimStart().StartsWith("at ", StringComparison.Ordinal))), @"\n{2,}(?=  \d\) Expected:)", "\n");
 
 		private sealed class OnFailureCommand : DelegatingTestCommand
 		{
