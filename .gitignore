@@ -2,7 +2,6 @@ bin/
 obj/
 release/
 .vs/
-Thumbs.db
 *.cache
 *.user
 *.userprefs
@@ -10,3 +9,9 @@ Thumbs.db
 *.ncrunchsolution
 nCrunchTemp*
 _ReSharper*
+
+# DO NOT EDIT: gitignore-common convention
+.DS_Store
+Thumbs.db
+*.log
+# END DO NOT EDIT
