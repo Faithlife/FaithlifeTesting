@@ -1,11 +1,6 @@
-.vs/
-*.cache
-*.user
-*.userprefs
 *.ncrunchproject
 *.ncrunchsolution
 nCrunchTemp*
-_ReSharper*
 
 # DO NOT EDIT: gitignore-common convention
 .DS_Store
@@ -18,4 +13,13 @@ artifacts/
 bin/
 obj/
 release/
+# END DO NOT EDIT
+
+# DO NOT EDIT: gitignore-ide convention
+.vs/
+.idea/
+*.cache
+*.user
+*.userprefs
+_ReSharper*
 # END DO NOT EDIT
