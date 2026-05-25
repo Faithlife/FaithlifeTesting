@@ -1,4 +1,11 @@
 <Project>
+  <!-- DO NOT EDIT: faithlife-dotnet-library-props/properties convention -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
+  </PropertyGroup>
+  <!-- END DO NOT EDIT -->
   <ItemGroup>
     <PackageVersion Include="Faithlife.Json" Version="0.7.0" />
     <PackageVersion Include="Faithlife.Reflection" Version="1.1.0" />
@@ -14,13 +21,6 @@
     <PackageVersion Include="System.Threading.Channels" Version="5.0.0" />
     <PackageVersion Include="XmlDocMarkdown.Core" Version="2.3.0" />
   </ItemGroup>
-  <!-- DO NOT EDIT: faithlife-dotnet-library-props/properties convention -->
-  <PropertyGroup>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
-  </PropertyGroup>
-  <!-- END DO NOT EDIT -->
   <!-- DO NOT EDIT: faithlife-dotnet-library-props/analyzers convention -->
   <ItemGroup>
     <GlobalPackageReference Include="Faithlife.Analyzers" Version="1.*" />
