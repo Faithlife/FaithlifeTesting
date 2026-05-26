@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.1.8
+
+* Update package README.
+
 ## 2.1.7
 
 * Patch: Fix NRE when displaying a tuple.
