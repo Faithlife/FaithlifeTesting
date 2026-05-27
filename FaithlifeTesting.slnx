@@ -4,5 +4,4 @@
   <Project Path="src/Faithlife.Testing/Faithlife.Testing.csproj" />
   <Project Path="tests/Faithlife.Testing.Tests/Faithlife.Testing.Tests.csproj" />
   <Project Path="tools/Build/Build.csproj" />
-  <Project Path="tools/XmlDocGen/XmlDocGen.csproj" />
 </Solution>
