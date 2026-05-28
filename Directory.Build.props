@@ -5,6 +5,7 @@
     <NoWarn>$(NoWarn);1591;1998;CS0618;FL0016;IDE0004;IDE0005;IDE0055;IDE0120;IDE0130;IDE0200;IDE0340;NU1507;NU5105;NUnit2056;CA1001;CA1014;CA1305;CA1513;CA1515;CA2007;CA1031;CA1859;CA1860;CA2263</NoWarn>
     <GitHubOrganization>Faithlife</GitHubOrganization>
     <RepositoryName>FaithlifeTesting</RepositoryName>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <!-- DO NOT EDIT: dotnet-common-props convention -->
