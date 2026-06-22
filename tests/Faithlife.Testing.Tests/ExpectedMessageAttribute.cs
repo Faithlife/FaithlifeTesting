@@ -25,8 +25,8 @@ namespace Faithlife.Testing.Tests
 		public string ExpectedMessage { get; }
 		public bool ExpectStackTrace { get; }
 
-		public static void AssertAreMostlyEqual(string expected, string actual, string message = null)
-			=> Assert.AreEqual(Normalize(expected), Normalize(actual), message);
+		public static void AssertAreMostlyEqual(string expected, string actual, string message = null) =>
+			Assert.AreEqual(Normalize(expected), Normalize(actual), message);
 
 		public TestCommand Wrap(TestCommand command) => new OnFailureCommand(command, AssertMessageIsExpected);
 

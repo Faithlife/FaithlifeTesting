@@ -321,7 +321,7 @@ namespace System.Linq.Expressions
 		}
 
 #pragma warning disable SA1404 // Code analysis suppression should have justification
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+		[Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
 #pragma warning restore SA1404 // Code analysis suppression should have justification
 		protected override Expression VisitBinary(BinaryExpression node)
 		{
@@ -861,7 +861,7 @@ namespace System.Linq.Expressions
 		}
 
 #pragma warning disable SA1404 // Code analysis suppression should have justification
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+		[Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
 #pragma warning restore SA1404 // Code analysis suppression should have justification
 		protected override Expression VisitUnary(UnaryExpression node)
 		{

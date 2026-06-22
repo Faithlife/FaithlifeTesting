@@ -13,14 +13,14 @@ namespace Faithlife.Testing
 		/// Retries <paramref name="getResponse"/> until all assertions chained after this method pass.
 		/// </summary>
 		public static WaitUntilAssertable<TResponse> WaitUntil<TResponse>(Func<TResponse> getResponse)
-			where TResponse : AutoWebServiceResponse
-			=> AssertEx.WaitUntil(getResponse).AssertResponse();
+			where TResponse : AutoWebServiceResponse =>
+			AssertEx.WaitUntil(getResponse).AssertResponse();
 
 		/// <summary>
 		/// Retries <paramref name="getResponseAsync"/> until all assertions chained after this method pass.
 		/// </summary>
 		public static WaitUntilAssertable<TResponse> WaitUntil<TResponse>(Func<Task<TResponse>> getResponseAsync)
-			where TResponse : AutoWebServiceResponse
-			=> AssertEx.WaitUntil(getResponseAsync).AssertResponse();
+			where TResponse : AutoWebServiceResponse =>
+			AssertEx.WaitUntil(getResponseAsync).AssertResponse();
 	}
 }

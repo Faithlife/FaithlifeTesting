@@ -181,8 +181,8 @@ namespace Faithlife.Testing
 		/// </summary>
 		public static async Task<Assertable<T2>> HasValue<T1, T2>(this Task<Assertable<T1>> source, Expression<Func<T1, T2>> mapExpression)
 			where T1 : class
-			where T2 : class
-			=> (await source).HasValue(mapExpression);
+			where T2 : class =>
+			(await source).HasValue(mapExpression);
 
 		/// <summary>
 		/// Asserts that <paramref name="mapExpression" /> does not return `null`
@@ -190,24 +190,24 @@ namespace Faithlife.Testing
 		/// </summary>
 		public static async Task<T2> HasValue<T1, T2>(this Task<Assertable<T1>> source, Expression<Func<T1, T2?>> mapExpression)
 			where T1 : class
-			where T2 : struct
-			=> (await source).HasValue(mapExpression);
+			where T2 : struct =>
+			(await source).HasValue(mapExpression);
 
 		/// <summary>
 		/// Asserts that <paramref name="predicateExpression" /> does not return `false`
 		/// and allows chaining further asserts on the current value.
 		/// </summary>
 		public static async Task<Assertable<T>> IsTrue<T>(this Task<Assertable<T>> source, Expression<Func<T, bool>> predicateExpression)
-			where T : class
-			=> (await source).IsTrue(predicateExpression);
+			where T : class =>
+			(await source).IsTrue(predicateExpression);
 
 		/// <summary>
 		/// Asserts that <paramref name="assertionExpression" /> does not throw an exception
 		/// and allows chaining further asserts on the current value.
 		/// </summary>
 		public static async Task<Assertable<T>> DoesNotThrow<T>(this Task<Assertable<T>> source, Expression<Action<T>> assertionExpression)
-			where T : class
-			=> (await source).DoesNotThrow(assertionExpression);
+			where T : class =>
+			(await source).DoesNotThrow(assertionExpression);
 
 		internal static IEnumerable<(string Name, object Value)> GetContextFromObject(object context)
 		{

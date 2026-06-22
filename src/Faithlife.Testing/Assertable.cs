@@ -14,8 +14,8 @@ namespace Faithlife.Testing
 	{
 		internal static Assertable<T> NoOp() => FromValueExpression(null, null);
 
-		internal static Assertable<T> FromValueExpression(T value, Expression valueExpression)
-			=> new(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty, null);
+		internal static Assertable<T> FromValueExpression(T value, Expression valueExpression) =>
+			new(value, valueExpression, ImmutableStack<(string Name, object Value)>.Empty, null);
 
 		private Assertable(T value, Expression valueExpression, ImmutableStack<(string Name, object Value)> context, TryExtractValue tryExtractValue)
 		{

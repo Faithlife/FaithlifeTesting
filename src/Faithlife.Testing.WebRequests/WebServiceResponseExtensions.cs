@@ -75,8 +75,8 @@ namespace Faithlife.Testing
 			}
 
 			// Logic matches https://github.com/Faithlife/FaithlifeWebRequests/blob/5d04e85c62ae0ccea2ca7e45f5d40d650a7acd0b/src/Faithlife.WebRequests/Json/AutoWebServiceRequest.cs#L142
-			bool IsContentProperty(string propertyName)
-				=> string.Equals(statusCodeString, propertyName, StringComparison.OrdinalIgnoreCase);
+			bool IsContentProperty(string propertyName) =>
+				string.Equals(statusCodeString, propertyName, StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static IEnumerable<(string Name, object Value)> GetContext(WebServiceException exception, IEnumerable<(string Name, bool IsContent, object Value)> properties)
