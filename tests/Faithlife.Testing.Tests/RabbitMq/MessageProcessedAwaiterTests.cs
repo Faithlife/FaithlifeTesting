@@ -537,7 +537,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 					var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 					onRecievedWrapper = onRecieved;
@@ -548,7 +548,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 						lock (mutex)
 						{
 							if (isDisposed)
-								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+								ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 							try
 							{
@@ -572,7 +572,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 					if (dt > deliveryTag)
 						throw new InvalidOperationException("Unexpected large delivery tag");
@@ -593,7 +593,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 					if (dt > deliveryTag)
 						throw new InvalidOperationException("Unexpected large delivery tag");
@@ -608,7 +608,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 					isDisposed = true;
 				}
 			});
