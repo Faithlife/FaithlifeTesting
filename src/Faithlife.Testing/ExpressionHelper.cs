@@ -44,7 +44,7 @@ namespace Faithlife.Testing
 					? replacement
 					: base.VisitParameter(node);
 
-			private readonly IDictionary<ParameterExpression, Expression> m_parameterMap;
+			private readonly Dictionary<ParameterExpression, Expression> m_parameterMap;
 		}
 
 		private static readonly MethodInfo s_replaceParametersIfNotNull = typeof(ExpressionHelper).GetMethod(nameof(ReplaceParametersIfNotNull), BindingFlags.NonPublic | BindingFlags.Static);

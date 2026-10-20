@@ -456,7 +456,7 @@ namespace Faithlife.Testing
 				value = Value;
 			}
 
-			public Expression AsExpression() => Expression.MakeMemberAccess(Expression.Constant(this), s_getValue);
+			public MemberExpression AsExpression() => Expression.MakeMemberAccess(Expression.Constant(this), s_getValue);
 
 			private static readonly MemberInfo s_getValue = typeof(DebugValue<T>).GetProperty("Value");
 		}
