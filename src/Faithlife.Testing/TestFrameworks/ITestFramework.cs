@@ -1,5 +1,3 @@
-using System;
-
 namespace Faithlife.Testing.TestFrameworks
 {
 	internal interface ITestFramework

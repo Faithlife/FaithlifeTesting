@@ -1,4 +1,3 @@
-using System.Linq;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests

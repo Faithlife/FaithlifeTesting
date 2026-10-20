@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests

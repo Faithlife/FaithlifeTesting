@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http;
 using Faithlife.WebRequests;
 using Faithlife.WebRequests.Json;
 using NUnit.Framework;

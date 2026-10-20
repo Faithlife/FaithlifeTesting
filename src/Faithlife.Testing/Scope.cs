@@ -1,5 +1,3 @@
-using System;
-
 namespace Faithlife.Testing
 {
 	internal sealed class Scope : IDisposable
