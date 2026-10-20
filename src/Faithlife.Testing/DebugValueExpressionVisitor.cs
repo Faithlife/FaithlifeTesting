@@ -48,7 +48,7 @@ namespace Faithlife.Testing
 			var andedExpressions = new List<Expression>();
 			var stack = new Stack<Expression>();
 			stack.Push(body);
-			while (stack.Any())
+			while (stack.Count != 0)
 			{
 				var current = stack.Pop();
 				if (current is BinaryExpression { NodeType: ExpressionType.AndAlso } andAlso)

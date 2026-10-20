@@ -314,7 +314,7 @@ namespace Faithlife.Testing
 			sb.Append('\t');
 			sb.Append(expected);
 
-			if (actualValues.Any())
+			if (actualValues.Count != 0)
 			{
 				sb.AppendLineLf();
 				sb.AppendLineLf();
@@ -334,7 +334,7 @@ namespace Faithlife.Testing
 					allContextValues.Add((name, ToString(value)));
 			}
 
-			if (allContextValues.Any())
+			if (allContextValues.Count != 0)
 			{
 				sb.AppendLineLf();
 				sb.AppendLineLf();
