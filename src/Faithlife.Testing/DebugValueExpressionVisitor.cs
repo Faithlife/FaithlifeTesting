@@ -264,52 +264,52 @@ namespace Faithlife.Testing
 			return node;
 		}
 
-		protected override Expression VisitConstant(ConstantExpression constant)
+		protected override Expression VisitConstant(ConstantExpression node)
 		{
-			if (constant.Type == typeof(bool))
+			if (node.Type == typeof(bool))
 			{
-				Out(((bool) constant.Value) ? "true" : "false");
-				return constant;
+				Out(((bool) node.Value) ? "true" : "false");
+				return node;
 			}
 
-			return base.VisitConstant(constant);
+			return base.VisitConstant(node);
 		}
 
-		protected override Expression VisitMethodCall(MethodCallExpression methodCall)
+		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
 			// Indexer methods
-			if (methodCall.Arguments.Count == 1 && methodCall.Method.Name == "get_Item" && methodCall.Method.IsSpecialName)
+			if (node.Arguments.Count == 1 && node.Method.Name == "get_Item" && node.Method.IsSpecialName)
 			{
-				var argument = methodCall.Arguments.Single();
+				var argument = node.Arguments.Single();
 
-				Visit(methodCall.Object);
+				Visit(node.Object);
 				Out("[");
 				Visit(argument);
 				Out("]");
 
-				return methodCall;
+				return node;
 			}
 
-			if (TryExtractDebugValue(methodCall, out var expressionText))
+			if (TryExtractDebugValue(node, out var expressionText))
 			{
 				Out(expressionText);
 
-				return methodCall;
+				return node;
 			}
 
-			return base.VisitMethodCall(methodCall);
+			return base.VisitMethodCall(node);
 		}
 
-		protected override Expression VisitMember(MemberExpression member)
+		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (TryExtractDebugValue(member, out var expressionText))
+			if (TryExtractDebugValue(node, out var expressionText))
 			{
 				Out(expressionText);
 
-				return member;
+				return node;
 			}
 
-			return base.VisitMember(member);
+			return base.VisitMember(node);
 		}
 
 		public IReadOnlyCollection<(string Name, object Value)> DebugValues => m_debugValues.Select(kvp => (kvp.Key, kvp.Value)).ToList().AsReadOnly();

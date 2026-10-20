@@ -130,15 +130,15 @@ namespace Faithlife.Testing
 				m_parameterName = parameterName;
 			}
 
-			protected override Expression VisitMember(MemberExpression me)
+			protected override Expression VisitMember(MemberExpression node)
 			{
-				if (me.Expression != m_parameterExpression)
-					return base.VisitMember(me);
+				if (node.Expression != m_parameterExpression)
+					return base.VisitMember(node);
 
-				if (m_newParameters.TryGetValue(me.Member, out var pe))
+				if (m_newParameters.TryGetValue(node.Member, out var pe))
 					return pe;
 
-				return m_newParameters[me.Member] = Expression.Parameter(me.Type, m_parameterName);
+				return m_newParameters[node.Member] = Expression.Parameter(node.Type, m_parameterName);
 			}
 
 			public bool TryGetSingleClassParameter(out MemberInfo mi, out ParameterExpression pe)

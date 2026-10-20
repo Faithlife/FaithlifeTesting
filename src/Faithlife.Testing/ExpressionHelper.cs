@@ -42,10 +42,10 @@ namespace Faithlife.Testing
 					.ToDictionary(p => p, _ => newExpression);
 			}
 
-			protected override Expression VisitParameter(ParameterExpression parameter) =>
-				m_parameterMap.TryGetValue(parameter, out var replacement)
+			protected override Expression VisitParameter(ParameterExpression node) =>
+				m_parameterMap.TryGetValue(node, out var replacement)
 					? replacement
-					: base.VisitParameter(parameter);
+					: base.VisitParameter(node);
 
 			private readonly IDictionary<ParameterExpression, Expression> m_parameterMap;
 		}
