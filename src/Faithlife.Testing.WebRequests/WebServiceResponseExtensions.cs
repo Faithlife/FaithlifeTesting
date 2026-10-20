@@ -35,7 +35,7 @@ namespace Faithlife.Testing
 			var exception = response.CreateException();
 			var statusCodeString = exception.ResponseStatusCode?.ToString();
 
-			var properties = DtoInfo.GetInfo(typeof(TResponse))
+			var properties = DtoInfo.GetInfo<TResponse>()
 				.Properties
 				.Select(p => (p.Name, IsContent: IsContentProperty(p.Name), Value: p.GetValue(response)))
 				.Where(p => !IsDefault(p.Value))
