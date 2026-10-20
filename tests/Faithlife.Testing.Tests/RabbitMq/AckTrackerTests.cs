@@ -117,9 +117,11 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				{
 					var startTime = Enumerable.Range(0, messagesCount)
 						.Select(i =>
-							i <= firstCancelAfter ? 0
-							: i <= secondCancelAfter ? 1
-							: 2)
+							i <= firstCancelAfter
+								? 0
+								: i <= secondCancelAfter
+									? 1
+									: 2)
 						.ToArray();
 					var possibleProcessTimes = Enumerable.Range(0, messagesCount)
 						.Select(i =>
@@ -144,10 +146,13 @@ namespace Faithlife.Testing.Tests.RabbitMq
 						{
 							foreach (var processResult in GetAllPermutations(
 								messagesCount,
-								i => !shouldStartProcessing[i] ? new[] { (ProcessResult) (-1) }
-									: startTime[i] == processTime[i] ? new[] { ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }
-									: processTime[i] == 3 ? new[] { ProcessResult.AlreadyAcked, ProcessResult.AlreadyNacked }
-									: new[] { ProcessResult.AlreadyNacked, ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }))
+								i => !shouldStartProcessing[i]
+									? new[] { (ProcessResult) (-1) }
+									: startTime[i] == processTime[i]
+										? new[] { ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }
+										: processTime[i] == 3
+											? new[] { ProcessResult.AlreadyAcked, ProcessResult.AlreadyNacked }
+											: new[] { ProcessResult.AlreadyNacked, ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }))
 							{
 								// Run the test and ensure nothing gets double-acked.
 								var tracker = new AckTrackerTracker();
