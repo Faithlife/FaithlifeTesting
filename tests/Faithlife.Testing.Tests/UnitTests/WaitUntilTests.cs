@@ -9,7 +9,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public async Task TestSuccessFirstTry()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await AssertEx.WaitUntil(fooService.GetFooAsync)
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 1);
 		}
 
@@ -17,7 +17,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public async Task TestSuccessSecondTry()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await AssertEx.WaitUntil(fooService.GetFooAsync)
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 2);
 		}
 
@@ -25,7 +25,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		public async Task TestSuccessSecondTrySmallTimeout()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await AssertEx.WaitUntil(fooService.GetFooAsync)
 				.WithTimeout(TimeSpan.FromMilliseconds(1))
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 2);
 		}
@@ -42,7 +42,7 @@ Context:
 		public async Task TestFailThirdTrySmallTimeout()
 		{
 			var fooService = new FooService();
-			await AssertEx.WaitUntil(() => fooService.GetFooAsync())
+			await AssertEx.WaitUntil(fooService.GetFooAsync)
 				.WithTimeout(TimeSpan.FromMilliseconds(1))
 				.IsTrue(f => f.Bar == "bar" && f.TryCount == 3);
 		}
@@ -53,9 +53,9 @@ Context:
 			var fooService = new FooService();
 
 			await Task.WhenAll(
-				AssertEx.WaitUntil(() => fooService.GetFooAsync())
+				AssertEx.WaitUntil(fooService.GetFooAsync)
 					.IsTrue(f => f.Bar == "bar"),
-				AssertEx.WaitUntil(() => fooService.GetFooAsync())
+				AssertEx.WaitUntil(fooService.GetFooAsync)
 					.IsTrue(f => f.Bar == "bar"));
 
 			AssertEx.IsTrue(() => fooService.TryCount == 2);
