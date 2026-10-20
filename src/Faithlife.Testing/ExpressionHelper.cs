@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -42,12 +39,12 @@ namespace Faithlife.Testing
 					.ToDictionary(p => p, _ => newExpression);
 			}
 
-			protected override Expression VisitParameter(ParameterExpression parameter) =>
-				m_parameterMap.TryGetValue(parameter, out var replacement)
+			protected override Expression VisitParameter(ParameterExpression node) =>
+				m_parameterMap.TryGetValue(node, out var replacement)
 					? replacement
-					: base.VisitParameter(parameter);
+					: base.VisitParameter(node);
 
-			private readonly IDictionary<ParameterExpression, Expression> m_parameterMap;
+			private readonly Dictionary<ParameterExpression, Expression> m_parameterMap;
 		}
 
 		private static readonly MethodInfo s_replaceParametersIfNotNull = typeof(ExpressionHelper).GetMethod(nameof(ReplaceParametersIfNotNull), BindingFlags.NonPublic | BindingFlags.Static);

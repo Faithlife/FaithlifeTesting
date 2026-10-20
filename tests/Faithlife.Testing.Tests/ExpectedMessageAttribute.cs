@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
@@ -14,7 +12,7 @@ namespace Faithlife.Testing.Tests
 	/// `RetryAttribute` retries on **assertion failures**; this attribute retries on **thrown exceptions**, such as those thrown by browser automation.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-	public sealed class ExpectedMessageAttribute : NUnitAttribute, IWrapSetUpTearDown
+	internal sealed class ExpectedMessageAttribute : NUnitAttribute, IWrapSetUpTearDown
 	{
 		public ExpectedMessageAttribute(string expectedMessage, bool expectStackTrace = false)
 		{

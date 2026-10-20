@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace Faithlife.Testing.RabbitMq
 {
@@ -113,7 +108,7 @@ namespace Faithlife.Testing.RabbitMq
 		{
 			lock (m_lock)
 			{
-				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
+				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<>));
 
 				m_cancellationTokenSource.Cancel();
 

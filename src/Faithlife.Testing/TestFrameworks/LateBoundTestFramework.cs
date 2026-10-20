@@ -1,8 +1,5 @@
-using System;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 
 namespace Faithlife.Testing.TestFrameworks
 {
@@ -17,8 +14,7 @@ namespace Faithlife.Testing.TestFrameworks
 					var prefix = assemblyName + ",";
 					var assembly = AppDomain.CurrentDomain
 						.GetAssemblies()
-						.Where(a => a.FullName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-						.FirstOrDefault();
+						.FirstOrDefault(a => a.FullName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
 					if (assembly == null)
 						return default;

@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using Faithlife.Utility;
 
 namespace Faithlife.Testing.RabbitMq
@@ -112,7 +107,7 @@ namespace Faithlife.Testing.RabbitMq
 					m_awaiters.Clear();
 				}
 
-				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
+				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<>));
 			}
 
 			consumerIsComplete?.GetAwaiter().GetResult();
@@ -248,7 +243,7 @@ namespace Faithlife.Testing.RabbitMq
 								m_awaiters.Remove(awaiter);
 							}
 
-							hasAwaiters = m_awaiters.Any();
+							hasAwaiters = m_awaiters.Count != 0;
 
 							if (!hasAwaiters)
 								consumer.Stop();

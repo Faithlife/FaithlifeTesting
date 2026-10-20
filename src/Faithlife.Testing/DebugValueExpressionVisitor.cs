@@ -1,7 +1,4 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -51,7 +48,7 @@ namespace Faithlife.Testing
 			var andedExpressions = new List<Expression>();
 			var stack = new Stack<Expression>();
 			stack.Push(body);
-			while (stack.Any())
+			while (stack.Count != 0)
 			{
 				var current = stack.Pop();
 				if (current is BinaryExpression { NodeType: ExpressionType.AndAlso } andAlso)
@@ -264,52 +261,52 @@ namespace Faithlife.Testing
 			return node;
 		}
 
-		protected override Expression VisitConstant(ConstantExpression constant)
+		protected override Expression VisitConstant(ConstantExpression node)
 		{
-			if (constant.Type == typeof(bool))
+			if (node.Type == typeof(bool))
 			{
-				Out(((bool) constant.Value) ? "true" : "false");
-				return constant;
+				Out(((bool) node.Value) ? "true" : "false");
+				return node;
 			}
 
-			return base.VisitConstant(constant);
+			return base.VisitConstant(node);
 		}
 
-		protected override Expression VisitMethodCall(MethodCallExpression methodCall)
+		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
 			// Indexer methods
-			if (methodCall.Arguments.Count == 1 && methodCall.Method.Name == "get_Item" && methodCall.Method.IsSpecialName)
+			if (node.Arguments.Count == 1 && node.Method.Name == "get_Item" && node.Method.IsSpecialName)
 			{
-				var argument = methodCall.Arguments.Single();
+				var argument = node.Arguments.Single();
 
-				Visit(methodCall.Object);
+				Visit(node.Object);
 				Out("[");
 				Visit(argument);
 				Out("]");
 
-				return methodCall;
+				return node;
 			}
 
-			if (TryExtractDebugValue(methodCall, out var expressionText))
+			if (TryExtractDebugValue(node, out var expressionText))
 			{
 				Out(expressionText);
 
-				return methodCall;
+				return node;
 			}
 
-			return base.VisitMethodCall(methodCall);
+			return base.VisitMethodCall(node);
 		}
 
-		protected override Expression VisitMember(MemberExpression member)
+		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (TryExtractDebugValue(member, out var expressionText))
+			if (TryExtractDebugValue(node, out var expressionText))
 			{
 				Out(expressionText);
 
-				return member;
+				return node;
 			}
 
-			return base.VisitMember(member);
+			return base.VisitMember(node);
 		}
 
 		public IReadOnlyCollection<(string Name, object Value)> DebugValues => m_debugValues.Select(kvp => (kvp.Key, kvp.Value)).ToList().AsReadOnly();
@@ -459,7 +456,7 @@ namespace Faithlife.Testing
 				value = Value;
 			}
 
-			public Expression AsExpression() => Expression.MakeMemberAccess(Expression.Constant(this), s_getValue);
+			public MemberExpression AsExpression() => Expression.MakeMemberAccess(Expression.Constant(this), s_getValue);
 
 			private static readonly MemberInfo s_getValue = typeof(DebugValue<T>).GetProperty("Value");
 		}

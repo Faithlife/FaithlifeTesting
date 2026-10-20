@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture, Ignore("Not yet implemented")]
-	public sealed class EqualityTests
+	internal sealed class EqualityTests
 	{
 		[Test, ExpectedMessage(
 			@"Expected:

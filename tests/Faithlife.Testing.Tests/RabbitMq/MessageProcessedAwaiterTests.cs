@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
 using FakeItEasy;
 using NUnit.Framework;
@@ -11,7 +7,7 @@ using NUnit.Framework.Internal;
 namespace Faithlife.Testing.Tests.RabbitMq
 {
 	[TestFixture]
-	public class MessageProcessedAwaiterTests
+	internal sealed class MessageProcessedAwaiterTests
 	{
 		[Test]
 		public async Task TestMessageSuccess()
@@ -541,7 +537,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 					var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 					onRecievedWrapper = onRecieved;
@@ -552,7 +548,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 						lock (mutex)
 						{
 							if (isDisposed)
-								throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+								ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 							try
 							{
@@ -576,7 +572,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 					if (dt > deliveryTag)
 						throw new InvalidOperationException("Unexpected large delivery tag");
@@ -597,7 +593,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 
 					if (dt > deliveryTag)
 						throw new InvalidOperationException("Unexpected large delivery tag");
@@ -612,7 +608,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 				lock (mutex)
 				{
 					if (isDisposed)
-						throw new ObjectDisposedException(nameof(IRabbitMqWrapper));
+						ObjectDisposedException.ThrowIf(isDisposed, typeof(IRabbitMqWrapper));
 					isDisposed = true;
 				}
 			});
@@ -654,7 +650,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 
 			public void PublishMessage(string message) => PublishMessagesCore(new[] { message });
-			public void PublishMessages(params string[] messages) => PublishMessagesCore(messages );
+			public void PublishMessages(params string[] messages) => PublishMessagesCore(messages);
 
 			public Action<IEnumerable<string>> PublishMessagesCore { get; set; }
 			public MessageProcessedAwaiter<FooDto> Awaiter { get; set; }

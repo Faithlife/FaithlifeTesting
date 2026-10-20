@@ -1,6 +1,4 @@
-using System;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using Faithlife.Testing.RabbitMq;
 using FakeItEasy;
 using NUnit.Framework;
@@ -8,7 +6,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.RabbitMq
 {
 	[TestFixture]
-	public sealed class MessagePublishedAwaiterTests
+	internal sealed class MessagePublishedAwaiterTests
 	{
 		[Test]
 		public async Task TestMessage()

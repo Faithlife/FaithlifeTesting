@@ -1,10 +1,9 @@
-using System.Linq;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class ImmutableStackTests
+	internal sealed class ImmutableStackTests
 	{
 		[Test]
 		public void TestEnumerate()

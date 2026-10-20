@@ -1,12 +1,9 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class ContextTests
+	internal sealed class ContextTests
 	{
 		[Test]
 		public void ObjectContext()
@@ -93,7 +90,7 @@ namespace Faithlife.Testing.Tests.UnitTests
 		{
 			var value = 1;
 			using var d = AssertEx.Context(() => value);
-			AssertHasContext(@"value = 1");
+			AssertHasContext("value = 1");
 		}
 
 		[Test, ExpectedMessage(@"Expected:
@@ -115,7 +112,7 @@ Actual:
 			using var d = AssertEx.Context(() => value);
 			using var e = AssertEx.Context(() => value);
 
-			AssertHasContext(@"value = 1");
+			AssertHasContext("value = 1");
 		}
 
 		[Test]
@@ -125,7 +122,7 @@ Actual:
 			const int value = 1;
 			using var d = AssertEx.Context(() => value);
 
-			AssertHasContext(@"1 = 1");
+			AssertHasContext("1 = 1");
 		}
 
 		[Test]
@@ -152,7 +149,7 @@ Actual:
 	value = 1");
 					}));
 
-			AssertHasContext(@"value = 1");
+			AssertHasContext("value = 1");
 		}
 
 		[Test]
@@ -172,7 +169,7 @@ Actual:
 
 			using var d = AssertEx.Context(() => value);
 
-			AssertHasContext(@"value = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
+			AssertHasContext("value = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
 		}
 
 		private static void AssertHasNoContext()

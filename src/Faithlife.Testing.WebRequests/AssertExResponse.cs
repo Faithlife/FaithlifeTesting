@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Faithlife.WebRequests.Json;
 
 namespace Faithlife.Testing

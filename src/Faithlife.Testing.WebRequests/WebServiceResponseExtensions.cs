@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Tasks;
 using Faithlife.Reflection;
 using Faithlife.WebRequests;
 using Faithlife.WebRequests.Json;
@@ -39,7 +35,7 @@ namespace Faithlife.Testing
 			var exception = response.CreateException();
 			var statusCodeString = exception.ResponseStatusCode?.ToString();
 
-			var properties = DtoInfo.GetInfo(typeof(TResponse))
+			var properties = DtoInfo.GetInfo<TResponse>()
 				.Properties
 				.Select(p => (p.Name, IsContent: IsContentProperty(p.Name), Value: p.GetValue(response)))
 				.Where(p => !IsDefault(p.Value))
@@ -130,15 +126,15 @@ namespace Faithlife.Testing
 				m_parameterName = parameterName;
 			}
 
-			protected override Expression VisitMember(MemberExpression me)
+			protected override Expression VisitMember(MemberExpression node)
 			{
-				if (me.Expression != m_parameterExpression)
-					return base.VisitMember(me);
+				if (node.Expression != m_parameterExpression)
+					return base.VisitMember(node);
 
-				if (m_newParameters.TryGetValue(me.Member, out var pe))
+				if (m_newParameters.TryGetValue(node.Member, out var pe))
 					return pe;
 
-				return m_newParameters[me.Member] = Expression.Parameter(me.Type, m_parameterName);
+				return m_newParameters[node.Member] = Expression.Parameter(node.Type, m_parameterName);
 			}
 
 			public bool TryGetSingleClassParameter(out MemberInfo mi, out ParameterExpression pe)

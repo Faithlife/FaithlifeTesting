@@ -3,7 +3,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class AssertableTests
+	internal sealed class AssertableTests
 	{
 		[Test]
 		public void IsTrueSuccess()
@@ -65,12 +65,12 @@ Actual:
 	foo = null")]
 		public void AssertMultipleNoop()
 		{
-			Assert.Multiple(() =>
+			using (Assert.EnterMultipleScope())
 			{
 				string foo = null;
 				AssertEx.HasValue(() => foo)
 					.IsTrue(a => a.Length == 5);
-			});
+			}
 		}
 
 		[Test, ExpectedMessage(@"Multiple failures or warnings in test:
@@ -87,13 +87,13 @@ Actual:
 ")]
 		public void AssertMultiple()
 		{
-			Assert.Multiple(() =>
+			using (Assert.EnterMultipleScope())
 			{
 				var foo = "bar";
 				AssertEx.HasValue(() => foo)
 					.IsTrue(a => a.Length == 5)
 					.IsTrue(a => a.Length == 4);
-			});
+			}
 		}
 
 		[Test]

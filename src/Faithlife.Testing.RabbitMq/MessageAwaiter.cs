@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Tasks;
 using Faithlife.Json;
 
 namespace Faithlife.Testing.RabbitMq
@@ -118,11 +114,11 @@ namespace Faithlife.Testing.RabbitMq
 				});
 
 			// Perhaps we missed the message because we could not deserialize it.
-			if (m_malformedMessages.Any())
+			if (m_malformedMessages.Count != 0)
 				assert = assert.Context(new { malformedMessages = m_malformedMessages });
 
 			// Perhaps we missed the message because got an exception checking if it matches.
-			if (m_messageExceptions.Any())
+			if (m_messageExceptions.Count != 0)
 				assert = assert.Context(new { messageExceptions = m_messageExceptions });
 
 			var param = Expression.Parameter(typeof(IReadOnlyCollection<TMessage>), "m");

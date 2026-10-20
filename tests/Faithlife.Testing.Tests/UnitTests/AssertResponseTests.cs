@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http;
 using Faithlife.WebRequests;
 using Faithlife.WebRequests.Json;
 using NUnit.Framework;
@@ -7,7 +6,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class AssertResponseTests
+	internal sealed class AssertResponseTests
 	{
 		[Test]
 		public void TestSuccessOK()

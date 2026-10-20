@@ -1,6 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Text;
 using Faithlife.Testing.RabbitMq;
 using NUnit.Framework;
@@ -8,7 +6,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.RabbitMq
 {
 	[TestFixture]
-	public sealed class AckTrackerTests
+	internal sealed class AckTrackerTests
 	{
 		[Test]
 		public void TestNothing() => new AckTrackerTracker().AssertCalculateNacks(0, "");
@@ -117,9 +115,11 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				{
 					var startTime = Enumerable.Range(0, messagesCount)
 						.Select(i =>
-							i <= firstCancelAfter ? 0
-							: i <= secondCancelAfter ? 1
-							: 2)
+							i <= firstCancelAfter
+								? 0
+								: i <= secondCancelAfter
+									? 1
+									: 2)
 						.ToArray();
 					var possibleProcessTimes = Enumerable.Range(0, messagesCount)
 						.Select(i =>
@@ -144,10 +144,13 @@ namespace Faithlife.Testing.Tests.RabbitMq
 						{
 							foreach (var processResult in GetAllPermutations(
 								messagesCount,
-								i => !shouldStartProcessing[i] ? new[] { (ProcessResult) (-1) }
-									: startTime[i] == processTime[i] ? new[] { ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }
-									: processTime[i] == 3 ? new[] { ProcessResult.AlreadyAcked, ProcessResult.AlreadyNacked }
-									: new[] { ProcessResult.AlreadyNacked, ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }))
+								i => !shouldStartProcessing[i]
+									? new[] { (ProcessResult) (-1) }
+									: startTime[i] == processTime[i]
+										? new[] { ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }
+										: processTime[i] == 3
+											? new[] { ProcessResult.AlreadyAcked, ProcessResult.AlreadyNacked }
+											: new[] { ProcessResult.AlreadyNacked, ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }))
 							{
 								// Run the test and ensure nothing gets double-acked.
 								var tracker = new AckTrackerTracker();
@@ -187,7 +190,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		}
 
 		// Duplicates `ProcessResult` for `public` visibility
-		public enum ProcessResult
+		internal enum ProcessResult
 		{
 			AlreadyNacked,
 			AlreadyAcked,
@@ -226,7 +229,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		{
 			public void Observe(int index, bool startProcessing)
 			{
-				m_history.AppendLine($"tracker.Observe({index}, startProcessing: {startProcessing.ToString().ToLowerInvariant()});");
+				m_history.AppendLine(CultureInfo.InvariantCulture, $"tracker.Observe({index}, startProcessing: {startProcessing.ToString().ToLowerInvariant()});");
 
 				var deliveryTag = (ulong) index + 1;
 				m_tracker.Observe(deliveryTag);
@@ -239,7 +242,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 
 			public void EndProcessing(int index, ProcessResult action)
 			{
-				m_history.AppendLine($"tracker.EndProcessing({index}, ProcessResult.{action});");
+				m_history.AppendLine(CultureInfo.InvariantCulture, $"tracker.EndProcessing({index}, ProcessResult.{action});");
 
 				var deliveryTag = (ulong) index + 1;
 
@@ -257,7 +260,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				var nackSingle = new List<ulong>();
 				m_tracker.CalculateNacks(out var nackMultiple, ref nackSingle);
 
-				m_history.AppendLine($"tracker.CalculateNacks(); // nackMultiple: {nackMultiple} nackSingle: {string.Join("", nackSingle)}");
+				m_history.AppendLine(CultureInfo.InvariantCulture, $"tracker.CalculateNacks(); // nackMultiple: {nackMultiple} nackSingle: {string.Join("", nackSingle)}");
 
 				foreach (var nack in nackSingle)
 				{
