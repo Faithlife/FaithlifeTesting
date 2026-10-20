@@ -28,7 +28,7 @@ namespace Faithlife.Testing.RabbitMq
 
 		public void CalculateNacks(out ulong nackMultiple, ref List<ulong> nackSingle)
 		{
-			if (!m_processingDeliveryTags.Any())
+			if (m_processingDeliveryTags.Count == 0)
 			{
 				// If no delivery-tags are processing, nack the last non-acked one.
 				nackMultiple = m_lastObservedDeliveryTag;
@@ -80,11 +80,11 @@ namespace Faithlife.Testing.RabbitMq
 			// Cleanup tracking sets
 			m_shouldNackDeliveryTags.Clear();
 
-			if (!m_processingDeliveryTags.Any())
+			if (m_processingDeliveryTags.Count == 0)
 			{
 				m_ackedDeliveryTags.Clear();
 			}
-			else if (m_ackedDeliveryTags.Any())
+			else if (m_ackedDeliveryTags.Count != 0)
 			{
 				var min = m_processingDeliveryTags.Min();
 				m_ackedDeliveryTags.RemoveWhere(dt => dt < min);

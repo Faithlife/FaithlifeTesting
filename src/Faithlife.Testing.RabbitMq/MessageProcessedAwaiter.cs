@@ -243,7 +243,7 @@ namespace Faithlife.Testing.RabbitMq
 								m_awaiters.Remove(awaiter);
 							}
 
-							hasAwaiters = m_awaiters.Any();
+							hasAwaiters = m_awaiters.Count != 0;
 
 							if (!hasAwaiters)
 								consumer.Stop();
