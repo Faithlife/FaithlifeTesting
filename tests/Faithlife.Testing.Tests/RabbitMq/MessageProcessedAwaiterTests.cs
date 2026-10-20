@@ -650,7 +650,7 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 			}
 
 			public void PublishMessage(string message) => PublishMessagesCore(new[] { message });
-			public void PublishMessages(params string[] messages) => PublishMessagesCore(messages );
+			public void PublishMessages(params string[] messages) => PublishMessagesCore(messages);
 
 			public Action<IEnumerable<string>> PublishMessagesCore { get; set; }
 			public MessageProcessedAwaiter<FooDto> Awaiter { get; set; }
