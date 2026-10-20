@@ -107,7 +107,7 @@ namespace Faithlife.Testing.RabbitMq
 					m_awaiters.Clear();
 				}
 
-				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
+				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<>));
 			}
 
 			consumerIsComplete?.GetAwaiter().GetResult();

@@ -108,7 +108,7 @@ namespace Faithlife.Testing.RabbitMq
 		{
 			lock (m_lock)
 			{
-				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<TMessage>));
+				m_exception ??= new ObjectDisposedException(nameof(MessagePublishedAwaiter<>));
 
 				m_cancellationTokenSource.Cancel();
 
