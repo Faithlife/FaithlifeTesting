@@ -14,7 +14,7 @@ namespace Faithlife.Testing
 		public static (Expression ValueExpression, string AssertMessage) ReplaceParametersIfNotNull(Expression hasValueExpression, LambdaExpression remainingExpression, IEnumerable<(string Name, object Value)> context)
 		{
 			return ((Expression, string)) s_replaceParametersIfNotNull.MakeGenericMethod(hasValueExpression.Type)
-				.Invoke(null, new object[] { hasValueExpression, remainingExpression, context });
+				.Invoke(null, [hasValueExpression, remainingExpression, context]);
 		}
 
 		private static (Expression ResultExpression, string AssertMessage) ReplaceParametersIfNotNull<TIntermediate>(Expression hasValueExpression, LambdaExpression remainingExpression, IEnumerable<(string Name, object Value)> context)

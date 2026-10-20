@@ -465,7 +465,7 @@ Actual:
 	}")]
 		public void TestLargeObjectWithSmallArrayFormatting()
 		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 }, Ints = new[] { 1, 2, 3 } };
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Foo = new FooDto { Bar = "hashtag yolo swag", Baz = 1 }, Ints = [1, 2, 3] };
 			AssertEx.IsTrue(() => bar == null);
 		}
 
@@ -506,7 +506,7 @@ Actual:
 	}")]
 		public void TestLargeObjectWithLargeArrayFormatting()
 		{
-			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 } };
+			var bar = new BarDto { Text = "Oogity Boogity Boo, The Krampus comes for you.", Ints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26] };
 			AssertEx.IsTrue(() => bar == null);
 		}
 

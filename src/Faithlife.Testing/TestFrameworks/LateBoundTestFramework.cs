@@ -23,7 +23,7 @@ namespace Faithlife.Testing.TestFrameworks
 					var failMethod =
 						(assembly.GetType(failTypeName)
 							?? throw new InvalidOperationException($"Failed to create the assertion type for the current test framework: \"{failTypeName}, {assembly.FullName}\""))
-						.GetMethod(failMethodName, BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null)
+						.GetMethod(failMethodName, BindingFlags.Public | BindingFlags.Static, null, [typeof(string)], null)
 							?? throw new InvalidOperationException($"Failed to create the assert-failure method for the current test framework: \"{failTypeName}.{failMethodName}, {assembly.FullName}\"");
 
 					var isolatedContext =

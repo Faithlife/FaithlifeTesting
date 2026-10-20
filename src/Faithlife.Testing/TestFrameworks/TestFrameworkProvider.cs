@@ -7,10 +7,10 @@ namespace Faithlife.Testing.TestFrameworks
 		public static IDisposable GetIsolatedContext() => s_currentFramework.Value.GetIsolatedContext();
 
 		private static readonly ITestFramework[] s_frameworks =
-		{
+		[
 			new LateBoundTestFramework("nunit.framework", "NUnit.Framework.Assert", "Fail", "NUnit.Framework.Internal.TestExecutionContext+IsolatedContext"),
 			new FallbackTestFramework(),
-		};
+		];
 
 		private static readonly Lazy<ITestFramework> s_currentFramework = new(
 			() => s_frameworks.First(f => f.IsAvailable),

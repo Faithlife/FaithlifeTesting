@@ -140,17 +140,17 @@ namespace Faithlife.Testing.Tests.RabbitMq
 
 					foreach (var shouldStartProcessing in GetAllPermutations(messagesCount, _ => new[] { true, false }))
 					{
-						foreach (var processTime in GetAllPermutations(messagesCount, i => shouldStartProcessing[i] ? possibleProcessTimes[i] : new[] { -1 }))
+						foreach (var processTime in GetAllPermutations(messagesCount, i => shouldStartProcessing[i] ? possibleProcessTimes[i] : [-1]))
 						{
 							foreach (var processResult in GetAllPermutations(
 								messagesCount,
 								i => !shouldStartProcessing[i]
 									? new[] { (ProcessResult) (-1) }
 									: startTime[i] == processTime[i]
-										? new[] { ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }
+										? [ProcessResult.AlreadyAcked, ProcessResult.ShouldNack]
 										: processTime[i] == 3
-											? new[] { ProcessResult.AlreadyAcked, ProcessResult.AlreadyNacked }
-											: new[] { ProcessResult.AlreadyNacked, ProcessResult.AlreadyAcked, ProcessResult.ShouldNack }))
+											? [ProcessResult.AlreadyAcked, ProcessResult.AlreadyNacked]
+											: [ProcessResult.AlreadyNacked, ProcessResult.AlreadyAcked, ProcessResult.ShouldNack]))
 							{
 								// Run the test and ensure nothing gets double-acked.
 								var tracker = new AckTrackerTracker();

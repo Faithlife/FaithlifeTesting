@@ -14,8 +14,8 @@ Actual:
 	bar = [1, 3, 2]")]
 		public void TestArrayInequality()
 		{
-			int[] foo = { 1, 2, 3 };
-			int[] bar = { 1, 3, 2 };
+			int[] foo = [1, 2, 3];
+			int[] bar = [1, 3, 2];
 
 			AssertEx.IsTrue(() => foo == bar);
 		}
@@ -23,7 +23,7 @@ Actual:
 		[Test]
 		public void TestReferenceEquality()
 		{
-			int[] foo = { 1, 2, 3 };
+			int[] foo = [1, 2, 3];
 
 			// ReSharper disable once EqualExpressionComparison
 #pragma warning disable CS1718 // Comparison made to same variable
@@ -34,8 +34,8 @@ Actual:
 		[Test]
 		public void TestArrayEquality()
 		{
-			int[] foo = { 1, 2, 3 };
-			int[] bar = { 1, 2, 3 };
+			int[] foo = [1, 2, 3];
+			int[] bar = [1, 2, 3];
 
 			AssertEx.IsTrue(() => foo == bar);
 		}
@@ -43,8 +43,8 @@ Actual:
 		[Test]
 		public void TestJaggedArrayEquality()
 		{
-			int[][] foo = { new[] { 1, 2, 3 }, new[] { 4, 5 } };
-			int[][] bar = { new[] { 1, 2, 3 }, new[] { 4, 5 } };
+			int[][] foo = [[1, 2, 3], [4, 5]];
+			int[][] bar = [[1, 2, 3], [4, 5]];
 
 			AssertEx.IsTrue(() => foo == bar);
 		}
