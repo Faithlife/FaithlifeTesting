@@ -3,7 +3,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class WaitUntilTests
+	internal sealed class WaitUntilTests
 	{
 		[Test]
 		public async Task TestSuccessFirstTry()

@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.RabbitMq
 {
 	[TestFixture]
-	public sealed class AckTrackerTests
+	internal sealed class AckTrackerTests
 	{
 		[Test]
 		public void TestNothing() => new AckTrackerTracker().AssertCalculateNacks(0, "");
@@ -190,7 +190,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		}
 
 		// Duplicates `ProcessResult` for `public` visibility
-		public enum ProcessResult
+		internal enum ProcessResult
 		{
 			AlreadyNacked,
 			AlreadyAcked,

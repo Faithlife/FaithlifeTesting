@@ -3,7 +3,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class AssertExTests
+	internal sealed class AssertExTests
 	{
 		[Test]
 		public void TestIsTrueConstant()

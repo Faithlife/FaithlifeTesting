@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class AssertResponseTests
+	internal sealed class AssertResponseTests
 	{
 		[Test]
 		public void TestSuccessOK()

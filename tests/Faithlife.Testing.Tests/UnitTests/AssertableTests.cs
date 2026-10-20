@@ -3,7 +3,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class AssertableTests
+	internal sealed class AssertableTests
 	{
 		[Test]
 		public void IsTrueSuccess()

@@ -7,7 +7,7 @@ using NUnit.Framework.Internal;
 namespace Faithlife.Testing.Tests.RabbitMq
 {
 	[TestFixture]
-	public class MessageProcessedAwaiterTests
+	internal sealed class MessageProcessedAwaiterTests
 	{
 		[Test]
 		public async Task TestMessageSuccess()

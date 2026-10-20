@@ -3,7 +3,7 @@ using NUnit.Framework;
 namespace Faithlife.Testing.Tests.UnitTests
 {
 	[TestFixture]
-	public sealed class ContextTests
+	internal sealed class ContextTests
 	{
 		[Test]
 		public void ObjectContext()
