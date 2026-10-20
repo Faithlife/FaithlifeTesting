@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Faithlife.Testing.RabbitMq;
 using NUnit.Framework;
@@ -228,7 +229,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 		{
 			public void Observe(int index, bool startProcessing)
 			{
-				m_history.AppendLine($"tracker.Observe({index}, startProcessing: {startProcessing.ToString().ToLowerInvariant()});");
+				m_history.AppendLine(CultureInfo.InvariantCulture, $"tracker.Observe({index}, startProcessing: {startProcessing.ToString().ToLowerInvariant()});");
 
 				var deliveryTag = (ulong) index + 1;
 				m_tracker.Observe(deliveryTag);
@@ -241,7 +242,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 
 			public void EndProcessing(int index, ProcessResult action)
 			{
-				m_history.AppendLine($"tracker.EndProcessing({index}, ProcessResult.{action});");
+				m_history.AppendLine(CultureInfo.InvariantCulture, $"tracker.EndProcessing({index}, ProcessResult.{action});");
 
 				var deliveryTag = (ulong) index + 1;
 
@@ -259,7 +260,7 @@ namespace Faithlife.Testing.Tests.RabbitMq
 				var nackSingle = new List<ulong>();
 				m_tracker.CalculateNacks(out var nackMultiple, ref nackSingle);
 
-				m_history.AppendLine($"tracker.CalculateNacks(); // nackMultiple: {nackMultiple} nackSingle: {string.Join("", nackSingle)}");
+				m_history.AppendLine(CultureInfo.InvariantCulture, $"tracker.CalculateNacks(); // nackMultiple: {nackMultiple} nackSingle: {string.Join("", nackSingle)}");
 
 				foreach (var nack in nackSingle)
 				{
