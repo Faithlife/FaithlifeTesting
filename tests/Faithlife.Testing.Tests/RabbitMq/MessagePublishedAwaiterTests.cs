@@ -154,6 +154,185 @@ System.InvalidOperationException: Sequence contains no matching element", expect
 		}
 
 		[Test]
+		public async Task TestMessageAsync()
+		{
+			var (awaiter, messages) = GetAwaiter();
+
+			var messagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await Task.Yield();
+				return m.Id == 1;
+			});
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			(await messagePublished).IsTrue(m => m.Bar == "baz");
+		}
+
+		[Test, CancelAfter(10000)]
+		public async Task TestAsyncPredicateCompletesAfterDelay()
+		{
+			var (awaiter, messages) = GetAwaiter();
+			var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			var messagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await gate.Task;
+				return m.Id == 1;
+			});
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			var task = Task.Run(async () => await messagePublished);
+			await Task.Delay(100);
+			Assert.That(task.IsCompleted, Is.False);
+
+			gate.SetResult(true);
+
+			(await task).IsTrue(m => m.Bar == "baz");
+		}
+
+		[Test, CancelAfter(10000)]
+		public async Task TestAsyncPredicateDoesNotBlockMessageLoop()
+		{
+			var (awaiter, messages) = GetAwaiter();
+			var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			var slow = awaiter.WaitForMessage(async m =>
+			{
+				await gate.Task;
+				return m.Id == 1;
+			});
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			// Registering awaiters takes the same lock the message loop uses, so this would hang if the lock were held while awaiting.
+			var fast = awaiter.WaitForMessage(m => m.Id == 1);
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			gate.SetResult(true);
+
+			(await slow).IsTrue(m => m.Bar == "baz");
+			(await fast).IsTrue(m => m.Bar == "baz");
+		}
+
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
+	messages.First(m => value(Faithlife.Testing.RabbitMq.MessageAwaiter`1[Faithlife.Testing.Tests.RabbitMq.MessagePublishedAwaiterTests+FooDto]).ReplayAsyncPredicate(m))
+
+Actual:
+	messages = [{ ""id"": 2, ""bar"": ""baz"" }]
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 1
+	context = ""present""
+
+System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
+		public async Task TestUnmatchedMessageAsync()
+		{
+			var (awaiter, messages) = GetAwaiter(shortTimeout: true);
+
+			var messagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await Task.Yield();
+				return m.Id == 1;
+			});
+
+			messages.TryWrite("{ id: 2, bar: \"baz\" }");
+
+			await messagePublished;
+		}
+
+		[Test, CancelAfter(10000), ExpectedMessage(@"Expected:
+	messages.First(m => value(Faithlife.Testing.RabbitMq.MessageAwaiter`1[Faithlife.Testing.Tests.RabbitMq.MessagePublishedAwaiterTests+FooDto]).ReplayAsyncPredicate(m))
+
+Actual:
+	messages = []
+
+Context:
+	timeout = ""50 milliseconds""
+	messageCount = 0
+	context = ""present""
+
+System.InvalidOperationException: Sequence contains no matching element", expectStackTrace: true)]
+		public async Task TestNoMessagesAsync()
+		{
+			var (awaiter, _) = GetAwaiter(shortTimeout: true);
+
+			await awaiter.WaitForMessage(m => Task.FromResult(m.Id == 1));
+		}
+
+		[Test, CancelAfter(10000)]
+		public async Task TestPredicateFailureAsync()
+		{
+			var (awaiter, messages) = GetAwaiter(shortTimeout: true);
+
+			var messagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await Task.Yield();
+				return Throw();
+			});
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			var exception = Assert.CatchAsync(async () => await messagePublished);
+
+			Assert.That(exception.Message, Does.Contain("messages = [{ \"id\": 1, \"bar\": \"baz\" }]"));
+			Assert.That(exception.Message, Does.Contain("System.InvalidOperationException: This is a test."));
+		}
+
+		[Test]
+		public async Task TestOneMessageMultipleAwaitersAsync()
+		{
+			var (awaiter, messages) = GetAwaiter();
+
+			var firstMessagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await Task.Yield();
+				return m.Id == 1;
+			});
+			var secondMessagePublished = awaiter.WaitForMessage(m => Task.FromResult(m.Id == 1));
+			var thirdMessagePublished = awaiter.WaitForMessage(m => m.Id == 1);
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+
+			(await firstMessagePublished).IsTrue(m => m.Bar == "baz");
+			(await secondMessagePublished).IsTrue(m => m.Bar == "baz");
+			(await thirdMessagePublished).IsTrue(m => m.Bar == "baz");
+		}
+
+		[Test]
+		public async Task TestMultipleAwaitersAsync()
+		{
+			var (awaiter, messages) = GetAwaiter();
+
+			var firstMessagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await Task.Yield();
+				return m.Id == 1;
+			});
+			var secondMessagePublished = awaiter.WaitForMessage(async m =>
+			{
+				await Task.Yield();
+				return m.Id == 2;
+			});
+
+			messages.TryWrite("{ id: 1, bar: \"baz\" }");
+			messages.TryWrite("{ id: 2, bar: \"zab\" }");
+
+			(await firstMessagePublished).IsTrue(m => m.Bar == "baz");
+			(await secondMessagePublished).IsTrue(m => m.Bar == "zab");
+		}
+
+		[Test]
+		public void TestAsyncPredicateNull()
+		{
+			var (awaiter, _) = GetAwaiter();
+
+			Assert.Throws<ArgumentNullException>(() => awaiter.WaitForMessage((Func<FooDto, Task<bool>>) null));
+		}
+
+		[Test]
 		public async Task TestDisposeBeforeAwait()
 		{
 			var mock = A.Fake<IRabbitMqWrapper>();

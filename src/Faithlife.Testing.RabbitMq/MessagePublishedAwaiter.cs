@@ -66,10 +66,17 @@ namespace Faithlife.Testing.RabbitMq
 			Task.Run(SubscriberLoop, m_cancellationTokenSource.Token);
 		}
 
-		public LazyTask<Assertable<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression)
-		{
-			var awaiter = new MessageAwaiter<TMessage>(m_context, predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression)));
+		public LazyTask<Assertable<TMessage>> WaitForMessage(Expression<Func<TMessage, bool>> predicateExpression) =>
+			WaitForMessage(new MessageAwaiter<TMessage>(m_context, predicateExpression ?? throw new ArgumentNullException(nameof(predicateExpression))));
 
+		/// <summary>
+		/// Waits for a message matching <paramref name="predicateAsync"/>, which is awaited (outside of any lock) for each message received.
+		/// </summary>
+		public LazyTask<Assertable<TMessage>> WaitForMessage(Func<TMessage, Task<bool>> predicateAsync) =>
+			WaitForMessage(new MessageAwaiter<TMessage>(m_context, predicateAsync ?? throw new ArgumentNullException(nameof(predicateAsync))));
+
+		private LazyTask<Assertable<TMessage>> WaitForMessage(MessageAwaiter<TMessage> awaiter)
+		{
 			lock (m_lock)
 			{
 				if (m_exception != null)
@@ -128,6 +135,8 @@ namespace Faithlife.Testing.RabbitMq
 				{
 					while (m_messages.TryRead(out var body))
 					{
+						List<MessageAwaiter<TMessage>> pending;
+
 						lock (m_lock)
 						{
 							var matches = MessageAwaiter<TMessage>.GetMatches(m_awaiters, body).ToList();
@@ -136,6 +145,27 @@ namespace Faithlife.Testing.RabbitMq
 							{
 								m_awaiters.Remove(match);
 								match.Complete();
+							}
+
+							pending = m_awaiters.Where(x => x.HasPendingMessage).ToList();
+						}
+
+						if (pending.Count != 0)
+						{
+							// Async predicates must not run under the lock. They never throw; failures are returned.
+							var results = await Task.WhenAll(pending.Select(x => x.EvaluatePendingAsync())).ConfigureAwait(false);
+
+							lock (m_lock)
+							{
+								for (var i = 0; i < pending.Count; i++)
+								{
+									// An awaiter that has timed out or been completed no longer observes messages.
+									if (m_awaiters.Contains(pending[i]) && pending[i].ApplyPendingResult(results[i].IsMatch, results[i].Error))
+									{
+										m_awaiters.Remove(pending[i]);
+										pending[i].Complete();
+									}
+								}
 							}
 						}
 					}

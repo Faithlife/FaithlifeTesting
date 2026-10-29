@@ -1,5 +1,9 @@
 # Release Notes
 
+## 2.2.0
+
+* Add `MessagePublishedAwaiter.WaitForMessage` overload that accepts an async predicate (`Func<TMessage, Task<bool>> predicateAsync`).
+
 ## 2.1.8
 
 * Update package README.

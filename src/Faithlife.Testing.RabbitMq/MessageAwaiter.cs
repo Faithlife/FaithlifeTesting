@@ -18,9 +18,58 @@ namespace Faithlife.Testing.RabbitMq
 			m_predicate = predicateExpression.Compile();
 		}
 
+		public MessageAwaiter(object context, Func<TMessage, Task<bool>> asyncPredicate)
+		{
+			m_context = context;
+			m_asyncPredicate = asyncPredicate;
+
+			// On timeout, the predicate is not run again; the results already observed are replayed instead.
+			var message = Expression.Parameter(typeof(TMessage), "m");
+			m_predicateExpression = Expression.Lambda<Func<TMessage, bool>>(
+				Expression.Call(Expression.Constant(this), nameof(ReplayAsyncPredicate), null, message),
+				message);
+		}
+
+		private bool ReplayAsyncPredicate(TMessage message) =>
+			m_asyncResults.Find(x => ReferenceEquals(x.Message, message)).Result?.GetAwaiter().GetResult() ?? false;
+
 		public TaskCompletionSource<Assertable<TMessage>> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public TMessage Message { get; private set; }
+
+		public bool HasPendingMessage => m_pendingMessage != null;
+
+		/// <summary>
+		/// Runs the async predicate against the message queued by <see cref="GetMatches"/>.
+		/// Must be called without holding any lock; the outcome is recorded via <see cref="ApplyPendingResult"/>.
+		/// </summary>
+		public async Task<(bool IsMatch, Exception Error)> EvaluatePendingAsync()
+		{
+			try
+			{
+				return (await m_asyncPredicate(m_pendingMessage).ConfigureAwait(false), null);
+			}
+			catch (Exception e)
+			{
+				return (false, e);
+			}
+		}
+
+		public bool ApplyPendingResult(bool isMatch, Exception error)
+		{
+			var message = m_pendingMessage;
+			m_pendingMessage = null;
+
+			m_asyncResults.Add((message, error == null ? Task.FromResult(isMatch) : Task.FromException<bool>(error)));
+
+			if (error != null && m_messageCount > c_messageLimit && m_messageExceptions.Count < c_messageLimit)
+				m_messageExceptions.Add(error);
+
+			if (isMatch)
+				Message = message;
+
+			return isMatch;
+		}
 
 		public static IEnumerable<MessageAwaiter<TMessage>> GetMatches(IEnumerable<MessageAwaiter<TMessage>> awaiters, string messageJson)
 		{
@@ -72,6 +121,13 @@ namespace Faithlife.Testing.RabbitMq
 				m_messages.Add(message);
 
 			bool foundMatch;
+
+			if (m_asyncPredicate != null)
+			{
+				// The async predicate is evaluated by the caller, outside of any lock.
+				m_pendingMessage = message;
+				return false;
+			}
 
 			try
 			{
@@ -158,10 +214,13 @@ namespace Faithlife.Testing.RabbitMq
 		});
 
 		private readonly Func<TMessage, bool> m_predicate;
+		private readonly Func<TMessage, Task<bool>> m_asyncPredicate;
 		private readonly object m_context;
 		private readonly Expression<Func<TMessage, bool>> m_predicateExpression;
 
 		private readonly List<TMessage> m_messages = new();
+		private readonly List<(TMessage Message, Task<bool> Result)> m_asyncResults = new();
+		private TMessage m_pendingMessage;
 		private readonly List<string> m_malformedMessages = new();
 		private readonly List<Exception> m_messageExceptions = new();
 		private int m_messageCount;
